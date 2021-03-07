@@ -1,18 +1,22 @@
 ---
-title: "R_Handbook"
+title: "UVic Biology R Handbook"
 author: "Geoffrey Osgood"
-date: "June 11, 2020"
+date: "March 6, 2021"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
     toc_float: yes
+  pdf_document:
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+Hey everyone! This is a little guide to R. The example data and the R markdown used to make this html (as well as a pdf version) can be found at the github for this website. Feel free to download and use as you need!
+
+GitHub: https://github.com/gjosgood/RhandbookUVicBiology.github.io
 
 # Basic R facts
 R works mainly through vectors, data frames, functions, and variables.
