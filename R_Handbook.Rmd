@@ -18,6 +18,8 @@ Hey everyone! This is a little guide to R. The example data and the R markdown u
 
 GitHub: https://github.com/gjosgood/RhandbookUVicBiology.github.io
 
+If you are not sure how to use GitHub, you can download all the files for your own use by clicking the green "Code" Button and clicking "Download ZIP." That will give you all the code and data from the GitHub!
+
 # Basic R facts
 R works mainly through vectors, data frames, functions, and variables.
 
