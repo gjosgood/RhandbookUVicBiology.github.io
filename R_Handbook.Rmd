@@ -1,0 +1,2459 @@
+---
+title: "R_Handbook"
+author: "Geoffrey Osgood"
+date: "June 11, 2020"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Basic R facts
+R works mainly through vectors, data frames, functions, and variables.
+
+Vectors are a single column (ie from a matrix) containing the same "type" of data (ie numeric, categorical)
+
+Data frames are columns put together into a table (ie your raw data and explanatory variables). Different columns can be different data types. Most often, you will upload and save your data into a data frame in R.
+
+Functions are the operations you perform on your data, such as statistical tests. They are denoted with "()" after the function name. You put arguments for the function in the brackets (eg the data for which you want the mean). 
+
+## Variables
+Variables are objects where you "put your work", such as store or name vectors or data frames in R, or save the output of functions and statistical tests. 
+
+Variables are made using either the "=" sign or "<-".
+
+Example: lm.out<-lm(y~x, data=data) saves the output of a linear regression to a variable named lm.out.
+
+Rules for naming variables:
+
+1. Variable names MUST start with a letter (not underscore or number).
+2. Variable names MUST contain ONLY letters, numbers, periods ("."), or underscores ("_") and not symbols like %. 
+
+In the chunk of code below, "data" is the variable I create to hold my data frame, but I could call it anything I want (like "skunk") as long as the name is not already used by something else and follows the rules.
+
+## Packages
+Many functions are built into R, but some researchers want to perform tests or make plots outside of base R functionality. Since R is open source, many researchers make "packages" that contain functions for different purposes. 
+
+To first install a package, use the function: install.packages("package name"). Ensure the package name is in quotation marks. You only need to do this once. 
+
+To load a package for use: library(package) or require(package) with package name NOT in quotation marks. You need to do this everytime, or in every script, you want to use this package.
+
+Example installing packages:
+vegan is an R package for community ecology analyses.
+
+install.packages("vegan") #you will have to pick a "mirror" - choose "cloud" or one close to you.
+
+to load the package:
+library(vegan)
+
+# Read in, explore, and transform data
+
+To make life easier, from Excel save your data as a CSV or TEXT file (both can be done using 'Save As'). Ensure there are NO SPACES in column headers (use underscore "_" or periods "." or capitals to differentiate words). Keep fancy symbols (ie @) out of your names too. 
+
+"Filepath" is the path and name of your file. Right click on your saved data file (csv or text) and use Properties (PC) or Get Info (Mac) to find the filepath. Copy and paste in quotation marks in the read.csv or read.table function. However, you must change all forward slashes to "/".
+
+You can store data in a data frame or a vector.  
+
+## Import (read) data into R
+```{r}
+#Read in data
+#data<-read.csv("filepath") - replace filepath with your actual filepath
+#data is a variable. You could call it anything.
+
+#example with my own filepath:
+mammal_data<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/mammals.csv", header=TRUE, stringsAsFactors=FALSE) #header=TRUE indicates the first row is column names
+#stringsAsFactors=F saves headaches later by ensuring "strings" (ie non-numbers) are read in as categorical variables rather than factors. Factors have special properties and it is annoying dealing with them until we want to explicitly. Many error messages will be avoided by reading in all strings as categorical variables instead of factors. 
+
+#Make a vector
+vector_example<-c(145,15,1,5,45,87,83,23) #c() is a function to bring together elements of the same type - concatenation.
+```
+
+You can examine if a data frame read in correctly using head() to see the first six rows; tail to see the last; dim to see the number of rows and columns (in that order); names() for the column names; nrow() and ncol() for the number of rows and columns, respectively; and length() for the length of a vector or list. NOTE: length() will give number of elements in a vector or number of columns of a data frame (remember a data frame is a list of columns). Finally, use str() to see the structure of your data (what columns are there, what kinds of data are stored in each, ie numbers, strings)
+
+Also use names() to rename columns
+
+```{r}
+#Take a look to make sure data read in correctly:
+head(mammal_data) #see first six rows
+names(mammal_data) #access column names
+dim(mammal_data) #number of rows, columns in data frame
+nrow(mammal_data) #number of rows
+ncol(mammal_data) #number of columns
+length(vector_example) #number of elements in my vector
+str(mammal_data) # how many columns, how many elements in each column, and the type of data in each column.
+
+names(mammal_data)<-c("Species", "Brain_size", "Body_size") #rename the three columns of mammal_data
+```
+To access or reference a single column, it is easiest to use the "$" operator: 
+For example: mammal_data$Brain_size gives me the brain size column in the mammals data frame.
+
+```{r}
+#Retrieve the first six rows (head) of the brain column of mammal_data
+head(mammal_data$Brain_size)
+```
+## Data types
+The basic data types in R are: factors, characters, numeric, integar, and Boolean. 
+
+Factors and characters represent all data that are NOT numbers — a type of data called strings. Strings can be identifid as being within quotation marks (" ").  
+
+A factor is used in statistics to represent strings (categorical variables) that have distinct and repeated levels of manipulation, such as a high, medium, and low food treatments in a feeding experiment. If the categorical variable is not composed of a few particular levels that are repeated many times, then the variable is called a "character." Statistical tests are run using factors (when you have categorical explanatory variables), but R will convert characters automatically to factors when needed, so it is always better to work with characters first as they are less error prone while exploring or cleaning data.
+
+Numeric data are numbers you intend to use in analyses as continuous variables.
+Integers are integers. 
+
+Boolean is a special data type for the output of logical statements and takes the form TRUE or FALSE. If you see TRUE or FALSE in all caps in a data column, those data are Boolean. You can create Boolean data using logical statements (x > y). See an example in the code chunk below. 
+
+You can use str() on your data frame to see how the data in each of your columns are classified. You can use class() to get the class of a single vector or column.
+
+Use as.character() to change a vector or column to a character.
+
+Use as.factor() to change a vector or column to a factor.
+
+Use as.numeric() to change a vector or column to numeric. NOTE: Factors are assigned numbers that represent the order of the levels (ie 1 represents the first level). When you use as.numeric on a factor, you change the vector or column to these numbers. For instance, the string "3" (notice the "") can be turned to the number 3 using as.numeric("3"), but only if it is classified as a character in R first. Using as.numeric() after as.factor("3") will give 1 (since "3" is the only element given, it is automatically assigned the first level, ie 1). See code chunk below for this in action.
+
+Use as.numeric on Boolean variables to change TRUE to 1 and FALSE to 0 - useful if you are counting how many TRUE statements you have. BUT you can also use mathematical operators on Boolean values and R will automatically turn them into numbers first (ie sum(x>5) will count how many times x is greater than 5).
+
+You can also treat numbers as characters if the numbers do not mean something mathematically but represent a categorical variable - month is an example.
+
+```{r}
+
+#Examine structure of the data:
+str(mammal_data)
+#tells me it is a data frame of 62 rows in 3 columns. 
+#Species in mammal_data is a 'character'
+#body and brain are numeric
+
+#Use as.factor() to change a variable to a factor 
+mammal_data$Species<-as.factor(mammal_data$Species) # $ is how I access a specific column (in this case Species).
+
+class(mammal_data$Species) # tells me what "class" Species is - should be a factor now.
+
+#Use as.character() to change a variable to a character again 
+mammal_data$Species<-as.character(mammal_data$Species) 
+
+class(mammal_data$Species) #Should be character now.
+
+#Numbers to character
+mammal_data$Brain_size<-as.character(mammal_data$Brain_size)
+class(mammal_data$Brain_size) #Should be character now.
+
+mammal_data$Brain_size<-as.numeric(mammal_data$Brain_size)
+class(mammal_data$Brain_size) #Should be character now.
+
+#Numbers representing level order when using as.numeric on a factor. Default order is alphabetical (ie so alphabetically first factor level will be assigned "1").
+head(as.numeric(as.factor(mammal_data$Brain_size)))
+
+#Some packages include example data accessed with the data() function. The mammals data set above is an example from the MASS package.
+library(MASS) #access the data
+data(mammals)
+
+#The rows are named based on the species. I can access these names with
+head(rownames(mammals)) #first six row names
+
+#Boolean examples
+#What if I wanted a column indicating if Brain size was greater than 4?
+mammal_data$isBrainBig<-mammal_data$Brain_size > 4
+head(mammal_data$isBrainBig)
+
+#how many species have a brain size greater than 4?
+sum(mammal_data$isBrainBig)
+#or
+sum(mammal_data$Brain_size > 4)
+
+#Using as.numeric on factors
+numberString <- as.factor(c("5", "2", "99", "8", "15")) #use c() to put all these strings together in a vector, then apply as.factor to all of them.
+
+#using as.numeric will return factor levels (alphabetically first will get factor level of 1)
+as.numeric(numberString)
+
+#convert to character to ensure as.numeric will produce numbers
+as.numeric(as.character(numberString))
+
+```
+## Exploring categorical variables, including factor levels
+
+You can use unique() to see how many unique/distinct values or characters exist in a column or vector.
+
+You can use table() to generate frequencies (how many observations of each level of a categorical variable).
+
+You can use levels() to see what levels a factor has and what level order each level has. Automatically, R assigns 1 to the alphabetically first level, but you can change the order yourself using the levels argument in the factor() function. See code chunk for an example.
+
+```{r}
+#what unique levels exist for a grouping variable:
+unique(mammal_data$Species)
+
+#how many observations are there for each level of a categorical variable:
+table(mammal_data$Species)
+
+#factor levels example
+colours<-as.factor(c("red", "blue", "green")) #use c() to put the strings together.
+
+levels(colours) # the levels and their order. Notice "blue" is first
+
+colours<-factor(colours, levels=c("red", "green", "blue"))
+levels(colours) #now "red" is first and "blue" is last
+
+```
+
+## Transform data - log, power, trigonometry
+
+To transform data, take the function you want (ie log) and apply it to the column of data you wish to transform. You can either replace the column with the transformed data, or make a new column using the $ symbol, which is used to access columns in a data frame.
+
+You can save transformed data into in the same column, but I recommend making a new column.
+
+```{r}
+library(MASS) #access the data
+data(mammals)
+
+ncol(mammals) # 2 columns
+
+#Transform data
+
+###################
+#Log-transform#####
+###################
+mammals$log_body <- log(mammals$body) #make a new column and put log-transformed body values into it. This uses base "e" (ie ln transform) by default
+
+ncol(mammals) # a new column has been added
+
+mammals$log10_body <- log(mammals$body, base=10) #make a new column and put log-transformed body values into it. This uses base "e" (ie ln transform) by default
+
+
+#Exponential function to reverse ln-transformation
+mammals$undo_log <- exp(mammals$log_body) #make a new column and put exponential transformed log-body values into it.
+
+#Exponential function to reverse log10-transformation
+mammals$undo_log10 <- 10^(mammals$log10_body) #make a new column and put exponential transformed log-body values into it.
+
+#####################
+#Powers:#############
+#####################
+
+#Square root:
+mammals$sqrt_brain <- sqrt(mammals$brain) #make a new column and put square-root transformed brain values into it.
+
+mammals$brain_squared <- mammals$brain^2 #make a new column and put squared transformed brain values into it.
+mammals$brain_cubed <- mammals$brain^3 #make a new column and put cubed transformed brain values into it.
+
+mammals$brain_cubic_root <- mammals$brain^(1/3) #make a new column and put cubic root of brain values into it.
+
+mammals$arcsine_brain <- asin(mammals$brain) #make a new column and put cubic root 
+
+############################
+#Trigonometry functions:####
+############################
+#Making example data:##
+invasive_data<-data.frame(Treatment=rep(c("Pesticide", "Control"), rep(10,2)), Number_of_Quadrats=c(15,15,11,14,15,15,13,14,15,15,12,10,15,15,15,14,15,15,13,15), InvasiveSpecies=c(4,3,5,4,2,1,1,8,6,3,4,7,8,10,14,6,6,5,7,6), Precip=c(383,654,1203,1200,784,489,964,451,478,1478,547,964,1577,621,573,871,654,982,784,1482)) 
+##################
+
+#Transformations:
+invasive_data$ProportionInvasive<-invasive_data$InvasiveSpecies/invasive_data$Number_of_Quadrats #calculate proportions of species at a site that are invasive
+
+#Sine, cosine, and tangent
+invasive_data$sine_prop<-sin(invasive_data$ProportionInvasive)
+invasive_data$cosine_prop<-cos(invasive_data$ProportionInvasive)
+invasive_data$tangent_prop<-tan(invasive_data$ProportionInvasive)
+
+#Arcsine, arc-cosine, arc-tangent
+invasive_data$arcsine_prop<-asin(invasive_data$ProportionInvasive)
+invasive_data$arc_cosine_prop<-acos(invasive_data$ProportionInvasive)
+invasive_data$arc_tangent_prop<-atan(invasive_data$ProportionInvasive)
+
+```
+
+## Subset and order data frames
+
+Use "[]" to access specific rows, columns, or cells.
+
+Use subset() to subset data based on levels of a categorical variable (eg. get only the data in a "low" treatment).
+
+You can use order() to re-order data frames based on alphabetical or numerical order.
+
+
+```{r}
+#Example data set: 
+#Make a data frame holding Shannon diversity indices for sites within two MPAs, one column to hold the diversity index, the other to identify the MPA.
+
+#the shannon diversity held in separate objects called vectors
+#A vector is a single column of data of one type
+WhaleSanctuary=c(1.8816523, 1.8389828, 1.3239195, 0.6931472,  0.6615632,1.2299186, 1.9963156, 1.0045784, 0.3767702,2.0468186)
+
+KelpMPA=c(1.3835889, 1.2442544, 1.0567522, 0.9973048, 1.9783942,1.1156818, 1.3214234, 1.9923252, 1.2984907, 1.3025272)
+
+length(WhaleSanctuary) #length() tells me how many entries are in a list or vector
+
+#You can also store them together in a data frame:
+MPA_Data<-data.frame(MPA=c(rep("WhaleSanctuary", length(WhaleSanctuary)), rep("KelpMPA", length(KelpMPA))), ShannonDiversity=c(WhaleSanctuary, KelpMPA)) 
+#makes a data frame with each row as an observation. One column identifies the MPA and the other column holds the Shannon diversity of that site.
+#rep() replicates any text the specified number of times. 
+#so the MPA column repeats WhaleSanctuary for all the WhaleSanctuary numbers and then repeats KelpMPA for all the KelpMPA numbers
+
+#Subsetting data frames:
+#getting only the Kelp MPA data:
+KelP_MPA<-subset(MPA_Data, MPA=="KelpMPA") # == sign means find something exactly equal to this - not this is not the same as the single = sign, which is used in function arguments or to assign things to objects. 
+
+#Retrieve cells from a data frame:
+#[] is used to access data frames and matrices. In R: rows go before columns, so
+MPA_Data[3,2] #will give me the value in the third row, second column of MPA_Data
+
+#If I want all of one row: leave the columns blank:
+MPA_Data[2,] #gives me entire second row over all columns
+#If I want an entire column:
+MPA_Data[,2] #gives me entire second column
+
+# $ is also used to access specific columns of a data frame (or parts of a list - a data frame is really a list of columns)
+MPA_Data$MPA #gives me the MPA column
+
+```
+
+The function order() orders rows from A to Z or smallest to largest. Put a negative size in the brackets to do the reverse or use the decreasing=TRUE argument.
+
+```{r}
+#Order rows with small diversity first
+MPA_Data[order(MPA_Data$ShannonDiversity),]
+
+#Order sites with the largest diversity first
+MPA_Data[order(-MPA_Data$ShannonDiversity),]
+
+#Order brain size based on species - alphabetical order
+mammal_data[order(mammal_data$Species, decreasing=FALSE),]
+
+#Order brain size based on species - reverse alphabetical order
+mammal_data[order(mammal_data$Species, decreasing=TRUE),]
+
+```
+
+Reshaping data - when you have multiple response variables or levels, there are two ways to organize your data frame:
+
+1. "wide" format with each variable as its own column.
+
+2. "long" with the values for the variable in one column and an ID column indicating which variable or level the value represents. 
+
+Use the function melt() to change wide format to long and the function dcast() to turn long into wide format - in the reshape2 package. 
+
+Example: Ozone levels in different months, days, etc.
+
+```{r}
+#Example data set - ozone levels
+#install.packages("mlbench")
+library(mlbench)
+data(Ozone)
+Ozone_example<-Ozone[,c(1,2,4,5,6,8)] # I only want some columns for the example
+names(Ozone_example)<-c("Month", "Day", "Ozone", "Pressure", "Wind", "Temperature")
+head(Ozone_example) # it is currently in wide format, with ozone, pressure, wind, temperature each in their own column
+dim(Ozone_example)
+
+#Reshaping data frames
+#install.packages("reshape2")
+library(reshape2)
+
+#Turn wide format into long
+Ozone_long<-melt(Ozone_example, id.vars=c("Month", "Day")) # I want to take the climatic variables into one column, with a column identifying which climatic variable the value represents. I want Month and Day to still indicate the Month and Day of the measurements, hence why I put them in id.vars=c().
+names(Ozone_long)<-c("Month", "Day", "Climatic_variable", "Climatic_value")
+head(Ozone_long) #the four columns of climate variables have been collapased into 2, and the data frame is "longer."
+dim(Ozone_long)
+
+#Turn wide into long format - use dcast
+Ozone_wide<-dcast(Ozone_long, Month+Day~Climatic_variable, value.vars=c("Climatic_value"))#I want to keep Month and Day as explanatory columns, but put each climatic variable back into its own column. The values placed in each column is specified by value.vars - in this case the Climatic_value. 
+head(Ozone_long)
+dim(Ozone_long)
+
+```
+
+# Summary statistics
+## Read in example data
+```{r}
+#Example data used in ANOVA section
+library(carData) #remember to install.packages(carData) before first use
+data(Soils) #some packages have data sets saved in them. The data() function retrieves them - in this case loading a data frame called Soils
+head(Soils)
+```
+
+## Mean, range, standard deviation, standard error
+```{r}
+#Mean pH across all samples:
+mean(Soils$pH)
+#Mean pH by Depth class:
+aggregate(pH~Depth, data=Soils, FUN=mean) #aggregate runs a function for each level of a specified group (in this case depth classes)
+
+#Standard deviation of pH across all samples:
+sd(Soils$pH)
+#Standard deviation of pH by depth:
+aggregate(pH~Depth, data=Soils, FUN=sd) 
+
+#Variance of pH across all samples:
+var(Soils$pH)
+#Variance of pH by depth:
+aggregate(pH~Depth, data=Soils, FUN=var) 
+
+#Standard error of the mean
+#There is no function for standard error in R, so we have to make our own using the standard error formula:
+se<-function(x) {sd(x)/sqrt(length(x))}
+#Standard error of the mean of pH across all samples:
+se(Soils$pH)
+#Standard error of the mean of pH by depth:
+aggregate(pH~Depth, data=Soils, FUN=se)
+
+#Can also get minimum, maximum, mean, and quartiles:
+summary(Soils$pH)
+
+summary(Soils) #get summaries of all variables at once
+
+#or can use these functions (with aggregate as needed):
+max(Soils$pH) # for maximum
+min(Soils$pH) # for minimum
+range(Soils$pH) # for range
+median(Soils$pH) # for median
+```
+
+## Confidence intervals:
+
+Here are the steps for calculating confidence intervals in R:
+
+Calculate confidence intervals per depth interval example.
+
+1. Get the mean and standard error.
+
+```{r} 
+#I need the mean and se to find the confidence intervals, so I store it in an object:
+
+#in case you need to run the custom se function (R does not have one of its own):
+se<-function(x) {sd(x)/sqrt(length(x))}
+
+se_pH<-aggregate(pH~Depth, data=Soils, FUN=se) #se by depth
+mean_pH<-aggregate(pH~Depth, data=Soils, FUN=mean) #mean by depth
+names(se_pH) <- c("Depth", "SE_pH") #give me names representing what is in this data frame created by aggregate
+names(mean_pH) <- c("Depth", "Mean_pH")
+
+``` 
+
+2. Multiply the standard error by the correct quantile (for the normal distribution) to calculate the confidence limits.
+
+The function qnorm() gives me critical values for normal distribution for a given % of the area under the curve.
+
+For 95% confidence intervals, I look for the quantiles at 97.5%, which are the same since the normal distribution is symmetrical. So, I only need to use 0.975 in my qnorm function below. However, if my hypothesis is one-tailed, then I'll need either 0.05 or 0.95 in the function instead, depending on whether it is lower or upper tailed.
+
+```` {r}
+#This line gives me the plus/minus value by Depth interval, which I add to the mean to get the limits:
+limits<-se_pH$SE_pH*qnorm(0.975, mean=mean_pH$Mean_pH) #for 95% confidence intervals two-sided of a normal distribution
+```
+
+3. Subtract and add the confidence limit to the mean to calculate the full confidence interval.
+
+``` {r}
+#Upper limit
+upper_CI<-mean_pH$Mean_pH+limits
+#Lower limit
+lower_CI<-mean_pH$Mean_pH-limits
+
+#Put together into one data frame of means and confidence intervals by depth:
+pH_mean_CI<-data.frame(Depth=mean_pH$Depth, Mean_pH=mean_pH$Mean_pH, Upper_CI=upper_CI, Lower_CI=lower_CI)
+```
+
+# Plots
+
+## Plotting basics and scatterplots
+
+The plot() function is the base plotting function in R. 
+
+Use y~x to plot a response variable (y) against an explanatory (x). Use the data argument to specify where x and y are stored, if they are not their own vectors already.
+
+### Change point size, type, and colour
+```{r}
+#Example data
+MoleRats<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/MoleRats.csv", header=TRUE)
+
+MoleRats$caste<-factor(MoleRats$caste) #ensure my grouping variable is a factor for easier plotting
+
+plot(lnenergy~lnmass, data=MoleRats) #basic scatterplot
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16) #pch changes point type. Try a few different numbers.
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16, cex=2) #cex changes point size. Try a few different numbers.
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple") #col changes colour
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col=as.numeric(MoleRats$caste)) #col changes colour based on grouping variable
+
+
+####CUSTOM COLOURS#############
+
+#Make your own vector of colours that will be referenced in the col argument.
+
+colours<-c("red", "blue")#define colours you want to use
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col=colours[as.numeric(MoleRats$caste)]) #more customizable colour changes based on grouping variable. The first level is turned to a "1" and second level into a "2" by as.numeric, allowing me to get either the first colour or second colour of my object "colours" depending on the group (ie lazy or worker caste).
+```
+
+
+### Change axes and boxes around plots
+
+The easiest way to customize an axis is to remove the default one in the plot command, using yaxis="n" or xaxis="n" and then using the axis() function re-make the axis as you like. Use axis(1) for the x-axis and axis(2) for the y-axis. The top of a plot is axis(3) and the right (second y-axis) is axis(4).
+
+TO customize what labels are show, use the labels and at arguments. The labels argument specifies the labels, and the at argument specifies where along the axis you want to put the labels. They must be the same length (ie you cannot have more labels than places where you want to put the labels).
+
+Use las=2 to flip axis labels 90 degrees. You can use las=2 directly in the plot() function, but it will flip BOTH the x- and y-axis. Often, you just want to flip the y-axis, so I suppress it with yaxt="n" and remake it with axis(2, las=2). See example in the code chunk below.
+
+Use ylim and xlim arguments in the plot() function change y-axis and x-axis limits, respectively
+
+Use ylab and xlab arguments in the plot() function change y-axis and x-axis titles, respectively (another way is to use mtext below).
+
+``` {r}
+
+#Remove boxes around a plot:
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n") #bty="n" removes box around the plot
+
+
+#Add axis titles
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", ylab="Ln(Energy)", xlab="Ln(Mass)") 
+
+#Change axis limits
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", ylab="Ln(Energy)", xlab="Ln(Mass)", xlim=c(4.8,5.2)) #this limits the plot to between 4.8 and 5.2 on the x-axis
+
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", ylab="Ln(Energy)", xlab="Ln(Mass)", xlim=c(4.8,5.2), ylim=c(4.5,5.0)) #this further limits the plot to between 4.5 and 5.0 on the y-axis
+
+#Remove and substitute axes:
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", yaxt="n") #yaxt="n" removes the y-axis
+axis(2, labels=seq(3.5,5.0,0.5), at=seq(3.5,5.0,0.5), las=2) #adds the y-axis back (x-axis is "1", y-axis is "2"). seq goes from first number to second number in units of third number. las=2 turns the numbers of the axis ninety degrees. The specified labels are put in the positions along the axis specified by the at= argument.
+```
+
+
+### Add horizontal, vertical, regression lines
+
+abline adds lines to a plot. Use h for a horizontal line and v for a vertical line. To a regression line, place the regression object (see regression below) the abline().
+
+lwd changes the thickness of a line (higher numbers are thicker)
+lty changes the type of line (eg 2 is dashed). Examples: http://www.sthda.com/english/wiki/line-types-in-r-lty
+
+``` {r}
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", yaxt="n")
+axis(2, labels=seq(3.5,5.0,0.5), at=seq(3.5,5.0,0.5), las=2) 
+abline(h=4.1) #adds horizontal line at x=4.1
+abline(v=3.9) #adds vertical line at y=3.9
+abline(lm(lnenergy~lnmass, data=MoleRats), col="red", lwd=2) #adds red regression line. Use lwd to change line thickness
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", yaxt="n", ylab="Ln(energy)", xlab="Ln(mass)", ylim=c(3.5,5), xlim=c(3.8,5.2)) #Use ylab and xlab to change y- and x-axis titles, respectively. Use ylim and xlim to change y- and x-axis limits (min, max) respectively.
+axis(2, labels=seq(3.5,5.0,0.5), at=seq(3.5,5.0,0.5), las=2)
+abline(lm(lnenergy~lnmass, data=MoleRats), col="red", lwd=2, lty=2) #Use lty to change line type (1 is normal, 2 is dotted - try other numbers)
+
+#Use cex to change the size of elements
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", yaxt="n", ylab="Ln(energy)", xlab="Ln(mass)", ylim=c(3.5,5), xlim=c(3.8,5.2), cex=5) #cex changes size of points
+axis(2, labels=seq(3.5,5.0,0.5), at=seq(3.5,5.0,0.5), las=2)
+abline(lm(lnenergy~lnmass, data=MoleRats), col="red", lwd=2, lty=2) 
+
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", yaxt="n", ylab="Ln(energy)", xlab="Ln(mass)", ylim=c(3.5,5), xlim=c(3.8,5.2), cex=2, cex.axis=2, cex.lab=2) #cex.axis changes size of labels on axes. NOTE: if have axis() function, need to add it there for that axis. cex.lab changes size of axis titles.
+axis(2, labels=seq(3.5,5.0,0.5), at=seq(3.5,5.0,0.5), las=2, cex.axis=2)
+abline(lm(lnenergy~lnmass, data=MoleRats), col="red", lwd=2, lty=2) 
+
+```
+
+### Line plot 
+
+If you want lines instead of points, remove pch and add type="l" to your plot.
+
+``` {r}
+plot(lnenergy~lnmass, data=MoleRats, type="l") 
+
+#As you can see this does not work well with multiple points at each value of x.
+
+#A line plot of averages:
+means.rat<-aggregate(lnenergy~lnmass, data=MoleRats, mean)
+
+plot(lnenergy~lnmass, data=means.rat, type="l", col="pink", lwd=2, bty="n")
+
+#use col to change colour, lwd to change line thickness, lty to change line type
+
+```
+
+### Adding text to plots
+
+Use mtext() to add text to the sides of a plot, and text() to add text to the body of a plot (ie on the plot itself).
+
+You specify side in mtext(). Use mtext(side=1) for x-axis, mtext(side=2) for y-axis, mtext(side=3) for the top of a plot, mtext(side=4) for the second y-axis on the right of the plot. Use line to move the text up or down (relative to reading direction) - 0 is default; positive numbers move it up from this default and negative numbers move the text down. Use adj to move the text left or right - adj=0 is furthest left, adj=1 is furthest right, and adj=0.5 is centered.
+
+Use text() to add text to particular spot in a plot. The first number in text() should be the x coordinate and the second number the y coordinate.
+
+```{r}
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", ylab="Ln(energy)", xlab="Ln(mass)", ylim=c(3.5,5), xlim=c(3.8,5.2)) 
+mtext("Transformed data", side=4, line=-0.5, adj=0.5) #side indicates which side of the plot (1 = x-axis, 2 = y-axis, 3 = second x-axis on top, 4 = second y-axis on right). line indicates ohw far "up or down" (relative to reading direction) the text appears. Positive numbers move it up, negative numbers move it down, relative to position at line=0. adj moves the text "left or right" (relative to reading direction): 0.5 is the center, 1 is far right, 0 is far left. 
+text(4.2,4.4, "Mole rats yaaay") #places text at the specified location (x,y) - in this case 4.2 on the x- and 4.4 on the y-axis.
+
+#Can use cex argument to change text size.
+
+#play with side, line, and adj to see what happens.
+
+#If you do not like the position of the default y- or x-axis title, you can also make it with mtext(), first suppressing the default by adding ylab="" to your plot().
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col="purple", bty="n", ylab="", xlab="", ylim=c(3.5,5), xlim=c(3.8,5.2)) 
+mtext("Ln(mass)", side=1, line=2, adj=0.5) #x-axis title
+mtext("Ln(mass)", side=2, line=2, adj=0.5) #y-axis title
+
+```
+
+### Add a legend
+Use legend() after your plot to add a legend. 
+
+You specify the text (ie the labels), and then pch for point types and col for colours if you have points, or just fill for the colours if you have boxes/bars filled with colour rather than points.
+
+The first thing to go after the brackets will be the legend position, either coordinates (ie 4,5 for x=4, y=5) or "bottomright", "bottom", "bottomleft", "left", "topleft", "top", "topright", "right" and "center".
+
+```{r}
+
+colours<-c("red", "purple")#define colours you want to use
+plot(lnenergy~lnmass, data=MoleRats, pch=16, col=colours[as.numeric(MoleRats$caste)]) #more customizable colour changes based on grouping variable. The first level is turned to a "1" and second level into a "2" by as.numeric, allowing me to get either the first colour or second colour of my object "colours" depending on the group (ie lazy or worker caste).
+legend("topright", c("Lazy", "Worker"), fill=colours, bty="n", title="Caste") #use bty="n" to get rid of the box around the legend. Delete this argument if you want the box. I can tell from levels(MoleRats$caste) that lazy is the first level and worker the second, so lazy would become 1 and worker 2; hence lazy is the first colour.
+
+#Can use cex argument to change text size
+
+```
+
+
+## Bar plot
+``` {r}
+#Example data: 
+library(carData)
+data(Soils)
+
+#Simple bar chart:
+
+#First calculate summary statistic to be plotted (eg mean) with error (eg standard error):
+#Calculate mean and standard error:
+data_summary<-aggregate(pH~Depth, Soils, mean)
+data_summary$SE_pH<-aggregate(pH~Depth, Soils, function(x) sd(x)/sqrt(length(x)))[,2]
+names(data_summary)<-c("Depth", "Mean_pH", "SE_pH") #make sure the data frame has sensible column names
+
+#Use base plotting to plot the summary statistic (eg mean):
+b<-barplot(Mean_pH~Depth, data=data_summary, ylim=c(0,6), yaxt="n") #I stopped the function from making the y-axis with yaxt="n" so I can rotate the labels 90 degrees with the axis command below.
+axis(2, labels=0:6, at=0:6, las=2) #y-axis is axis 2 in R. las=2 rotates the labels 90. degrees for better reading. 0:6 means put labels 0 through 6 (going up by 1) at 0 through 6 on the y-axis.
+#Add error bars:
+arrows(x0=b, y0=data_summary$Mean_pH-data_summary$SE_pH, x1=b, y1=data_summary$Mean_pH+data_summary$SE_pH, code=3, angle=90, col="black", lwd=2) #bars are drawn along x-axis where the bars are (saved in "b").
+segments(0,0,4,0) #draws a line for the x-axis (ie a line from (0,0) to (4,0))
+
+#Use ggplot to plot the summary statistic (eg mean):
+library(ggplot2)
+g<-ggplot(Soils,aes(x=Depth, y=pH)) + #specifies the data and x and y variables. NOTE: ggplot takes the mean for you.
+    geom_bar(stat="identity") + #specifies the type of plot (a bar plot). 
+   theme_classic() #makes plot look professional
+  
+  
+#can also make horizontal:
+g + coord_flip()
+
+#Add error bars:
+p <- ggplot(data_summary, aes(x=Depth, y=Mean_pH)) + 
+   geom_bar(stat="identity") +
+  geom_errorbar(aes(ymin=Mean_pH-SE_pH, ymax=Mean_pH+SE_pH), width=.2) + #geom_errorbar adds error bars
+  theme_classic()
+###################################
+#Bar charts of multiple variables:
+##################################
+#Calculate mean and standard error:
+data_summary2<-aggregate(pH~Depth+Contour, Soils, mean)
+data_summary2$SE_pH<-aggregate(pH~Depth+Contour, Soils, function(x) sd(x)/sqrt(length(x)))[,3] #SE column is third column in the aggregate output
+names(data_summary2)<-c("Depth","Contour", "Mean_pH", "SE_pH") #make sure the data frame has sensible column names
+
+#Bars side by side base plot:
+par(xpd = TRUE) #xpd=TRUE lets me draw outside of plotting window - needed to make legend fit
+b<-barplot(Mean_pH~Depth+Contour, beside=TRUE, data=data_summary2, ylim=c(0,6), col=c("darkred", "darkgreen", "darkblue", "gold"), yaxt="n") #I stopped the function from making the y-axis with yaxt="n" so I can rotate the labels 90 degrees with the axis command below.
+axis(2, labels=0:6, at=0:6, las=2) #y-axis is axis 2 in R. las=2 rotates the labels 90. degrees for better reading. 0:6 means put labels 0 through 6 (going up by 1) at 0 through 6 on the y-axis.
+#Add error bars:
+arrows(x0=b, y0=data_summary2$Mean_pH-data_summary2$SE_pH, x1=b, y1=data_summary2$Mean_pH+data_summary2$SE_pH, code=3, angle=90, col="black", lwd=2, length=0.1) #bars are drawn along x-axis where the bars are (saved in "b").
+segments(0,0,14,0) #draws a line for the x-axis (ie a line from (0,0) to (14,0))
+legend(4,6.9, c("0-10", "10-30", "30-60", "60-90"), fill=c("darkred", "darkgreen", "darkblue", "gold"), ncol=4, bty="n", title="Depth") #adds a legend at coordinates specified (4th space for bars along the x axis, top of legend at 6.9 on y axis). Include the labels and matching colours. I use "fill" because the bars are filled with solid colours. Four columns (one row) in the legend so it is wider rather than longer. The bty="n" removes the box around the legend.
+
+#Bars side by side ggplot:
+# Use position=position_dodge()
+ggplot(data=Soils, aes(x=Contour, y=pH, fill=Depth)) +
+geom_bar(stat="identity", position=position_dodge()) + #position=position_dodge() specifies side by side
+  theme_classic()
+
+#Bars stacked base plot:
+par(xpd = TRUE) #xpd=TRUE lets me draw outside of plotting window - needed to make legend fit
+b<-barplot(Mean_pH~Depth+Contour, beside=FALSE, data=data_summary2, ylim=c(0,20), col=c("darkred", "darkgreen", "darkblue", "gold"), yaxt="n") #I stopped the function from making the y-axis with yaxt="n" so I can rotate the labels 90 degrees with the axis command below.
+axis(2, labels=seq(0,20,2), at=seq(0,20,2), las=2) #y-axis is axis 2 in R. las=2 rotates the labels 90. degrees for better reading. 0:6 means put labels 0 through 24 (going up by 2) at 0 through 24 on the y-axis.
+#Add error bars:
+segments(0,0,4,0) #draws a line for the x-axis (ie a line from (0,0) to (4,0))
+legend(1,23, c("0-10", "10-30", "30-60", "60-90"), fill=c("darkred", "darkgreen", "darkblue", "gold"), ncol=4, bty="n", title="Depth") #adds a legend at coordinates specified (1st space for bars along the x axis, top of legend at 23 on y axis). Include the labels and matching colours. I use "fill" because the bars are filled with solid colours. Four columns (one row) in the legend so it is wider rather than longer. The bty="n" removes the box around the legend.
+
+#Bars stacked ggplot:
+# Use position=position_dodge()
+ggplot(data=Soils, aes(x=Contour, y=pH, fill=Depth)) +
+geom_bar(stat="identity", position=position_stack()) + #position=position_dodge() specifies side by side
+  theme_classic()
+  
+```
+
+## Histograms
+```{r}
+#make a histogram of soil phosphorus:
+hist(Soils$P, col="purple", ylab="Frequnecy",
+	xlab="Phosphorus concentration (ppm)", main="", xlim=c(0,500), ylim=c(0,20))
+```
+
+## Histograms by group:
+```{r}
+#subset to get a data frame for each group:
+Depression <- subset(Soils, Contour=="Depression")
+Slope <- subset(Soils, Contour=="Slope")
+Top <- subset(Soils, Contour=="Top")
+
+#all in separate panels of the same plot
+par(mfrow=c(1,3)) #This makes my plots appear in a grid 
+#(1 by 3 - change the numbers in () if want different, ie (2,2) is 2x2)
+
+#histogram for depression type contour
+hist(Depression$P, col="purple", ylim = c(0,10), 
+     xlim=c(0,500), xlab="P (ppm)", main="") 
+#histogram for slope type contour
+hist(Slope$P, col="darkred", ylim = c(0,10), 
+     xlim=c(0,500), xlab="", main="")  
+#histogram for top type contour
+hist(Top$P, col="darkblue", ylim = c(0,10), 
+     xlim=c(0,500), xlab="", main="") 
+
+par(mfrow=c(1,1)) # return to just a single panel per plot
+#all in one plot:
+hist(Depression$P, col="purple", ylim = c(0,10), 
+     xlim=c(0,500), xlab="P (ppm)", main="") 
+hist(Slope$P, col="darkred", ylim = c(0,10), 
+     xlim=c(0,500), xlab="", main="", add=TRUE)  
+hist(Top$P, col="darkblue", ylim = c(0,10), 
+     xlim=c(0,500), xlab="", main="", add=TRUE) 
+legend(300,10, c("Depression", "Slope", "Top"), 
+       fill=c("purple", "darkred", "darkblue"), bty="n") # make a legend at x=300, y=10 
+#add=TRUE adds plots below to the plot above
+```
+
+## Boxplots
+```{r}
+#make a boxplot of soil phosphorus by contour type:
+boxplot(P~Contour, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Contour") #axes=F lets me add in my own axes for customization. You can make it axes = T if you want to quickly see the plot without making tweaks to the axes using the axis function as I do below.
+#frame=F removes box around the plot in a boxplot
+
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) #1 is for x-axis, 2 is for y-axis. 
+#levels(Contour) gives me the levels of my grouping variable (Contour) which I want as labels for my x-axis. 
+#at=1:3 means put the labels at positions 1,2, and 3 on the x-axis (ie where the boxes are for each group/Contour)
+#pos=0 puts the x-axis at zero on the y-axis (rather than slightly below)
+
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) #las=2 turns the labels 90 degrees so they go left-right rather than up-down.
+#seq() means from first number to second by the third number - ie give me all numbers from 0 to 500 going up by 100. I only want to label every 100 on my y-axis.
+
+segments(0,0,5,0)# adds a line along the x-axis so it intersects with the y-axis and looks nice. Arguments are x1,y1, x2,y2 - it draws a line from position x1, y1 to x2, y2. 
+
+```
+
+## Interval plots
+```{r}
+#Two methods:
+
+#using base R:
+#use cex (and cex.axis, cex.lab) to change size of things - bigger numbers make bigger text and thicker axes and larger points
+par(mar=c(5,5,5,5)) #makes the plotting window look nice - mar means change the margins of the plot, so things like axes titles can fit on the plotting window
+
+plot(0, type="n", ylab="Mean pH", xlab="Depth interval (cm)", xaxt="n",
+      bty="n", cex.axis=1.2, cex.lab=1.2, ylim=c(3.5,6.5), xlim=c(0.8,4.2), las=2)#makes an empty plot on which I can add points for the means and the error bars for the confidence intervals
+#The points representing the means will go at 1, 2, 3, and 4 along the x-axis to spread them out (and then that is also where the x-axis labels will go). I have the x-axis limits go a bit beyond 1 and 4 so the axis looks nice.
+
+#use points function to place means on the plot:
+points(Mean_pH~Depth, data=pH_mean_CI, pch=16, cex=1.2)
+#When plotting, the categorical Depth will be turned into numbers so R knows where to put the points. The first depth interval will become 1, the second 2, etc.
+#pch changes the type of point. Change the number to 17 or 18 or other numbers to see what happens.
+
+axis(1, labels=pH_mean_CI$Depth, at=1:4, cex.axis=1.2)
+#use the arrows function (code=3 means use bars as "arrows").
+#places the error bars at 1:4 (which means from 1 to 4 going up by 1), same place as the points for the means.
+arrows(1:4, pH_mean_CI$Lower_CI, 
+       1:4, pH_mean_CI$Upper_CI, 
+       length=0.05, angle=90, code=3, lwd=3) #lwd changes thickness of the lines.
+
+#Using ggplot2:
+#install.packages("ggplot2")
+library(ggplot2)
+
+ggplot(pH_mean_CI, aes(x = Depth,
+                              y = Mean_pH)) +
+  geom_errorbar(aes(ymin = Lower_CI,
+                    ymax = Upper_CI),
+                width = 0.05, 
+                size  = 1) +
+  geom_point(shape = 16, size  = 5) +
+  theme_bw() + #remove plot background colour
+  theme(axis.title   = element_text(face  = "bold")) +
+  ylab("Mean pH") + xlab("Depth interval") +
+  #These next lines remove grid lines in plot and box but keep axes
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text=element_text(size=18),#font size on axis labels
+        axis.title=element_text(size=18,face="bold")) #font size on axis title
+
+```
+
+## Multi-panel plots
+
+Example using Soils data.
+
+We have pH, N, and P we can plot, by contour and by depth - that can be a 2 by 3 multi-panel plot.
+
+Two ways:
+
+1. Use par(mfrow=c(nrow, ncol)) where nrow is number of rows and ncol is number of columns in your multi-panel.
+
+```{r}
+#Use Soils data as example:
+library(carData)
+data(Soils)
+
+par(mfrow=c(2,3))
+#boxplot of P by Contour:
+b1<-boxplot(P~Contour, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of N by Contour:
+b2<-boxplot(N~Contour, data=Soils, col="purple", frame=F, ylim=c(0,0.3), axes=F,ylab="N (%)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,0.3,0.05), at=seq(0,0.3,0.05),las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of pH by Contour:
+b3<-boxplot(pH~Contour, data=Soils, col="purple", frame=F, ylim=c(0,7), axes=F, ylab="pH", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,7,1), at=seq(0,7,1), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of P by Depth:
+b4<-boxplot(P~Depth, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Depth") 
+axis(1, labels=levels(Soils$Depth), at=1:4, pos=0)
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) 
+segments(0,0,4.5,0)
+
+#boxplot of N by Depth:
+b5<-boxplot(N~Depth, data=Soils, col="purple", frame=F, ylim=c(0,0.3), axes=F,ylab="N (%)", xlab="Depth") 
+axis(1, labels=levels(Soils$Depth), at=1:4, pos=0)
+axis(2, labels=seq(0,0.3,0.05), at=seq(0,0.3,0.05),las=2) 
+segments(0,0,4.5,0)
+
+#boxplot of pH by Contour:
+b6<-boxplot(pH~Depth, data=Soils, col="purple", frame=F, ylim=c(0,7), axes=F, ylab="pH", xlab="Depth") 
+axis(1, labels=levels(Soils$Depth), at=1:4, pos=0) 
+axis(2, labels=seq(0,7,1), at=seq(0,7,1), las=2) 
+segments(0,0,4.5,0)
+```
+
+2. Specify the position of plots in a matrix:
+
+```{r}
+#Take a look at the matrix:
+matrix(1:6, byrow=TRUE, ncol=3) #use ncol to specify number of columns
+#First plot will be upper left, second upper middle, third, upper left, etc.
+
+nf<-layout(matrix(1:6, byrow=TRUE, ncol=3)) #use a matrix to specify layout
+
+#call the plots again
+#boxplot of P by Contour:
+b1<-boxplot(P~Contour, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of N by Contour:
+b2<-boxplot(N~Contour, data=Soils, col="purple", frame=F, ylim=c(0,0.3), axes=F,ylab="N (%)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,0.3,0.05), at=seq(0,0.3,0.05),las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of pH by Contour:
+b3<-boxplot(pH~Contour, data=Soils, col="purple", frame=F, ylim=c(0,7), axes=F, ylab="pH", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,7,1), at=seq(0,7,1), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of P by Depth:
+b4<-boxplot(P~Depth, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Depth") 
+axis(1, labels=levels(Soils$Depth), at=1:4, pos=0)
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) 
+segments(0,0,4.5,0)
+
+#boxplot of N by Depth:
+b5<-boxplot(N~Depth, data=Soils, col="purple", frame=F, ylim=c(0,0.3), axes=F,ylab="N (%)", xlab="Depth") 
+axis(1, labels=levels(Soils$Depth), at=1:4, pos=0)
+axis(2, labels=seq(0,0.3,0.05), at=seq(0,0.3,0.05),las=2) 
+segments(0,0,4.5,0)
+
+#boxplot of pH by Contour:
+b6<-boxplot(pH~Depth, data=Soils, col="purple", frame=F, ylim=c(0,7), axes=F, ylab="pH", xlab="Depth") 
+axis(1, labels=levels(Soils$Depth), at=1:4, pos=0) 
+axis(2, labels=seq(0,7,1), at=seq(0,7,1), las=2) 
+segments(0,0,4.5,0)
+
+
+```
+You can also use layout() and matrix() to change the relative size of the plots by having one plot take up more positions in the matrix.
+
+Example: I want the P,N, and pH plots by contour on top, but add a fourth of density by contour which spans the bottom of the multi-panel plot.
+
+```{r}
+#Take a look at the matrix:
+matrix(c(1:3,4,4,4), byrow=TRUE, ncol=3) #use ncol to specify number of columns. I have three 4's because of the fourth plot will occupy the space of three plots (ie the three above it)
+
+nf<-layout(matrix(c(1:3,4,4,4), byrow=TRUE, ncol=3)) #use a matrix to specify layout
+
+
+#boxplot of P by Contour:
+boxplot(P~Contour, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of N by Contour:
+boxplot(N~Contour, data=Soils, col="purple", frame=F, ylim=c(0,0.3), axes=F,ylab="N (%)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,0.3,0.05), at=seq(0,0.3,0.05),las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of pH by Contour:
+boxplot(pH~Contour, data=Soils, col="purple", frame=F, ylim=c(0,7), axes=F, ylab="pH", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,7,1), at=seq(0,7,1), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of Soil density by Contour:
+boxplot(Dens~Contour, data=Soils, col="purple", frame=F, ylim=c(0,2), axes=F, ylab="Soil bulk density (gm/cm^3)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,2,0.05), at=seq(0,2,0.05), las=2) 
+segments(0,0,3.5,0)
+
+
+```
+
+### Add a), b), c) labels to multi-panel plots
+Use mtext to label multi-panel plots
+
+```{r}
+nf<-layout(matrix(c(1:3,4,4,4), byrow=TRUE, ncol=3)) #use a matrix to specify layout
+
+#boxplot of P by Contour:
+boxplot(P~Contour, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) 
+segments(0,0,3.5,0)
+mtext("a)", side=3, adj=-0.1, line=0)
+
+#boxplot of N by Contour:
+boxplot(N~Contour, data=Soils, col="purple", frame=F, ylim=c(0,0.3), axes=F,ylab="N (%)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,0.3,0.05), at=seq(0,0.3,0.05),las=2) 
+segments(0,0,3.5,0)
+mtext("b)", side=3, adj=-0.1, line=0)
+
+#boxplot of pH by Contour:
+boxplot(pH~Contour, data=Soils, col="purple", frame=F, ylim=c(0,7), axes=F, ylab="pH", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,7,1), at=seq(0,7,1), las=2) 
+segments(0,0,3.5,0)
+mtext("c)", side=3, adj=-0.1, line=0)
+
+#boxplot of Soil density by Contour:
+boxplot(Dens~Contour, data=Soils, col="purple", frame=F, ylim=c(0,2), axes=F, ylab="Soil bulk density (gm/cm^3)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,2,0.05), at=seq(0,2,0.05), las=2) 
+segments(0,0,3.5,0)
+mtext("d)", side=3, adj=0, line=0)
+
+```
+
+
+## Change margins of a plot
+
+Use par(mar=c(#,#,#,#)) to change the inner margins and par(oma=c(#,#,#,#)) to change outer margins. First number is bottom, second is left, third is top, fourth is right. 
+
+Use par(mar=c(), oma=c()) to change both together.
+```{r}
+
+#Take a look at the matrix:
+matrix(c(1:3,4,4,4), byrow=TRUE, ncol=3) #use ncol to specify number of columns. I have three 4's because of the fourth plot will occupy the space of three plots (ie the three above it)
+
+nf<-layout(matrix(c(1:3,4,4,4), byrow=TRUE, ncol=3)) #use a matrix to specify layout
+
+par(mar=c(1,1,1,1)) #change the margins
+
+#boxplot of P by Contour:
+boxplot(P~Contour, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of N by Contour:
+boxplot(N~Contour, data=Soils, col="purple", frame=F, ylim=c(0,0.3), axes=F,ylab="N (%)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,0.3,0.05), at=seq(0,0.3,0.05),las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of pH by Contour:
+boxplot(pH~Contour, data=Soils, col="purple", frame=F, ylim=c(0,7), axes=F, ylab="pH", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,7,1), at=seq(0,7,1), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of Soil density by Contour:
+boxplot(Dens~Contour, data=Soils, col="purple", frame=F, ylim=c(0,2), axes=F, ylab="Soil bulk density (gm/cm^3)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,2,0.05), at=seq(0,2,0.05), las=2) 
+segments(0,0,3.5,0)
+
+
+```
+
+The inner marings are smaller so the plots are closer together, but all the labels are cut off. Trying making the marings bigger, especially those with labels.
+
+```{r}
+#Take a look at the matrix:
+matrix(c(1:3,4,4,4), byrow=TRUE, ncol=3) #use ncol to specify number of columns. I have three 4's because of the fourth plot will occupy the space of three plots (ie the three above it)
+
+nf<-layout(matrix(c(1:3,4,4,4), byrow=TRUE, ncol=3)) #use a matrix to specify layout
+
+par(mar=c(4,4,1.2,4)) #change the margins
+
+#boxplot of P by Contour:
+boxplot(P~Contour, data=Soils, col="purple", frame=F, ylim=c(0,500), axes=F, ylab="P (ppm)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,500,100), at=seq(0,500,100), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of N by Contour:
+boxplot(N~Contour, data=Soils, col="purple", frame=F, ylim=c(0,0.3), axes=F,ylab="N (%)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,0.3,0.05), at=seq(0,0.3,0.05),las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of pH by Contour:
+boxplot(pH~Contour, data=Soils, col="purple", frame=F, ylim=c(0,7), axes=F, ylab="pH", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,7,1), at=seq(0,7,1), las=2) 
+segments(0,0,3.5,0)
+
+#boxplot of Soil density by Contour:
+boxplot(Dens~Contour, data=Soils, col="purple", frame=F, ylim=c(0,2), axes=F, ylab="Soil bulk density (gm/cm^3)", xlab="Contour") 
+axis(1, labels=levels(Soils$Contour), at=1:3, pos=0) 
+axis(2, labels=seq(0,2,0.05), at=seq(0,2,0.05), las=2) 
+segments(0,0,3.5,0)
+```
+
+# Basic statistical models and tests
+
+Linear regression, ANOVAs, and t-tests are all linear models and can be done with the function lm (ie linear model). However, ANOVAs and t-tests also have their own functions. 
+
+Generalized linear models are extensions of the linear model for non-normal distributions.
+
+Linear or generalized mixed models incorporate random effects. 
+Generalized additive models and polynomial regression account for non-linearity in the response. 
+
+Non-linear models incorporate non-linearity in the parameters.
+
+## T-tests
+
+### One sample-test
+```{r}
+#This is a subset of data of stable isotopes for nitrogen taken from 10 sixgill shark embryo livers and the liver of their mother. Are these 10 values significantly different from the mother's value?
+
+pup_liver_isotopes<-c(12.78,12.52,12.69,12.43,12.23,12.33, 12.29,12.21,12.40,12.55) # c() is concatenate - brings together values into a single vector. 
+mom_liver_value<-13.05
+
+t.test(pup_liver_isotopes, mu=mom_liver_value, alternative = "two.sided") #two-tailed one sample t-test where null hypothesis value (mu) is the mom's nitrogen isotope value. Can change to "one.sided" for one-tailed hypothesis testing. 
+
+#Test assumptions:
+#Normality:
+shapiro.test(pup_liver_isotopes) # p-value > 0.05 so data are normally distributed
+```
+
+### Paired t-test
+```{r}
+#What about comparing nitrogen isotope values between liver and muscle, a sample of each taken from each embryo?
+
+pup_liver_isotopes<-c(12.78,12.52,12.69,12.43,12.23,12.33, 12.29,12.21,12.40,12.55) # same as above
+
+pup_muscle_isotopes<-c(14.43,15.72,15.77,15.39,15.42,16.85,15.56,15.93,15.58,15.09) # order is the same in each vector (ie it goes pup 1, then pup 2, etc. for both liver and muscle)
+
+t.test(pup_liver_isotopes, pup_muscle_isotopes, paired=TRUE) #each vector must be numeric with the order of samples the same in each
+
+#Test assumptions:
+#Normality of differences:
+pup_differences<-(pup_liver_isotopes-pup_muscle_isotopes) #set up a numeric vector with the differences
+shapiro.test(pup_differences) # p-value > 0.05 so the differences are normally distributed
+
+#QQ plot on the differences
+qqnorm(pup_differences, pch = 1, frame = FALSE)
+qqline(pup_differences, col = "steelblue", lwd = 2)
+```
+
+### Two-sample t-test
+```{r}
+#Two marine protected areas in South Africa, one designed for fish with lots of kelp and reef habitat, another designed for whales in a big, sandy bay. From videos taken at multiple random sites in each, a community of marine fish, crustacean, and cephalopod species was recorded. The Shannon diversity was calculated at each site (see Community ecology section). Do the two marine protected areas differ on average in their Shannon diversity?
+
+#Here are two ways to have your data stored in R: 
+#You can have them each as vectors:
+WhaleSanctuary=c(1.8816523, 1.8389828, 1.3239195, 0.6931472,  0.6615632,1.2299186, 1.9963156, 1.0045784, 0.3767702,2.0468186)
+
+KelpMPA=c(1.3835889, 1.7118451, 1.0567522, 0.9973048, 1.9783942, 1.1156818, 1.3214234, 1.9923252, 1.2984907, 1.3025272)
+
+#You can also store them together in a data frame (see Data frame section):
+MPA_Data<-data.frame(MPA=c(rep("WhaleSanctuary", length(WhaleSanctuary)), rep("KelpMPA", length(KelpMPA))), ShannonDiversity=c(WhaleSanctuary, KelpMPA)) 
+
+#With group1, group2 as seperate vectors:
+t.test(WhaleSanctuary, KelpMPA, var.equal = TRUE)
+
+#or with y~x and x is categorical with only two groups (binary):
+t.test(ShannonDiversity~MPA, data= MPA_Data, var.equal=TRUE)# as a data frame
+# ~ symbol means "as a funciton of" - used to code many statistical tests in R
+
+#Output shows mean Shannon diversity of KelpMPA is greater but NOT significantly based on alpha=0.05.
+
+#Test assumptions:
+#Normality of each broup:
+shapiro.test(WhaleSanctuary) 
+shapiro.test(KelpMPA)
+#p-value > 0.05 in both so they are normally distributed
+
+#QQ plot for checking normality (example is just for Whale Sanctuary)
+qqnorm(WhaleSanctuary, pch = 1, frame = FALSE)
+qqline(WhaleSanctuary, col = "steelblue", lwd = 2)
+
+
+#Equal variances
+#With group1, group2 as separate objects:
+var.test(WhaleSanctuary, KelpMPA) #performs F-test
+#or with y~x and x is categorical with only two groups (binary):
+var.test(ShannonDiversity~MPA, data=MPA_Data)
+
+bartlett.test(ShannonDiversity~MPA, data=MPA_Data) #Perform Bartlett's test
+
+library(car) #for Levene's test - remember to run install.packages("car") once to install the package or this line of code will not work!
+leveneTest(ShannonDiversity~MPA, data=MPA_Data) #Levene's test
+
+#If assumption of equality of variance is NOT meet, perform Welch's two-sample t-test by changing to var.equal=FALSE
+t.test(ShannonDiversity~MPA, data= MPA_Data, var.equal=FALSE)
+
+```
+
+### Non-parametric versions of the t-test
+NOTE: Check out Generalized Linear Models (GLMs) below that do not assume normality but are still parametric - especially if you have count, proportion, or presence/absence or yes/no data. These are preferable to non-parametric tests.
+
+```{r}
+# Mann-Whitney U Test/Wilcoxon rank sum test for two-sample t-test
+#With y~x and x is binary (categorical with two groups) as the argument:
+wilcox.test(ShannonDiversity~MPA, data=MPA_Data) #see two-sample t-test section for the data
+#or with group1, group2 as seperate vectors as arguments:
+wilcox.test(KelpMPA, WhaleSanctuary)
+
+# Wilcoxon signed rank test for paired samples:
+wilcox.test(pup_liver_isotopes, pup_muscle_isotopes,paired=TRUE) #see paired sample t-test section for the data. The order in each vector is the same (ie first element of each refers to values from shark 1, second element in each is shark 2, etc.)
+```
+
+## ANOVA
+```{r}
+#Read in data on soils
+library(carData) #remember to install.packages(carData) before first use
+data("Soils") #some packages have data sets saved in them. The data() function retrieves them - in this case loading a data frame called Soils
+head(Soils)
+
+#Focusing on pH - measurements at different contours of topography and soil depths at four different areas (blocks). Does pH depend on depth or contour, when controlling for the area of sampling?
+
+#Run an ANOVA, saving the output to an object I made up called a.out
+#works as y ~ x1 + x2 or y ~ x1*x2 for interations
+#Remember ~ means "is a function of"
+a.out<-aov(pH~Contour*Depth+Block, data=Soils) # the * specifies an interaction between Depth and Contour as well as the main effects of Contour and Depth on their own.
+#could also write as: aov(pH~Contour+Depth+Block+Contour:Depth, data=Soils). The : symbol is for specifying interactions on their own, without the main effects. 
+#Both A:B and A*B would work for interaction
+#Three-way interation would be A:B:C or A*B*C 
+
+summary(a.out) #get the ANOVA table with p-values
+
+#If you want the coefficients table (ie ANOVA expressed as a linear model)
+a.model.out<-lm(pH~Contour*Depth+Block, data=Soils)
+summary(a.model.out) # gives you the effect sizes, the differences between each group and the strength of the interaction (how much the effect changes due to each level of the interaction)
+
+#The interaction was not significant, so what if I want to run without it? 
+a.out2<-update(a.out, ~.-Contour:Depth) # the period (.) means everything. This says update a.out, but with the response (pH) as a function of (~) everything (.) minus the interaction. 
+summary(a.out2)
+
+```
+
+### Tukey post-hoc test
+```{r}
+tukey.plot.test<-TukeyHSD(a.out2) #run a Tukey post-hoc test for the above ANOVA
+plot(tukey.plot.test, las = 1) # the significant comparisons have error bars NOT overlapping with zero.
+```
+
+### Interaction plots
+```{r}
+par(mfrow=c(1,2)) #set plotting window to be 1 row and 2 columns
+#Show how the effect of contour on soil pH changes at different depths
+interaction.plot(x.factor=Soils$Contour, 
+                 trace.factor=Soils$Depth, 
+                 response=Soils$pH,
+                 trace.label="Depth", xlab="Contour",
+                 ylab="Soil pH", 
+                 col=c("red", "darkgreen", "blue", "purple"),
+                 lwd=4, bty="n", ylim=c(3.5,5.5), xtick=TRUE)
+
+#Show how the effect of depth on soil pH changes at different contours
+interaction.plot(x.factor=Soils$Depth, 
+                 trace.factor=Soils$Contour, 
+                 response=Soils$pH,
+                 trace.label="Contour", xlab="Depth",
+                 ylab="Soil pH", 
+                 col=c("red", "darkgreen", "purple"),
+                 lwd=4, bty="n", ylim=c(3.5,5.5), xtick=TRUE)
+
+```
+
+### Model diagnostics (are assumptions met?)
+```{r}
+#Examine diagnostic plots (ie Q-Q plot and residual vs fitted) for the ANOVA:
+par(mfrow=c(2,2))
+plot(a.out2) # Examine residual vs fitted for issues with equal variance
+
+#Testing normality of residuals (although can use Q-Q plot above)
+shapiro.test(a.out2$residuals)
+```
+
+### Non-parametric Kruskal-Wallis Test when normality not met
+NOTE: Check out Generalized Linear Models (GLMs) below that do not assume normality but are still parametric - especially if you have count, proportion, or presence/absence or yes/no data. These are preferable to non-parametric tests.
+
+```{r}
+
+kruskal.test(pH~Depth, data = Soils) #Remember: assumption of equality of variance still required 
+
+#pairwise test with Bonferroni correction for multiple testing:
+#the function requires the list of y values to be seperated from the categories of the factor (Contour) by a comma:
+pairwise.wilcox.test(Soils$pH, Soils$Depth,
+                 p.adjust.method = "bonferroni") # get p-values of each comparison
+```
+
+## Simple linear regression
+
+Linear regression builds on ANOVAs, letting explanatory variables be continuous numbers. In fact, an ANOVA is just a linear regression for categorical variables.
+
+Linear regression estimates the linear relationship (ie intercept and slope) between a continuous response variable and an explanatory variable. The slope represents your effect size (strength of th relationship). 
+
+You can get significance of the relationship (ie p-values) two ways:
+1. ANOVA using the anova() function.
+2. One-sample t-test asking if the slope is significantly different from zero using the summary() function.
+
+For linear regression, these two methods are mathematically the same.
+
+Linear regression assumptions:
+1. Independence of observations
+2. Variance in the response is the same for all values of the explanatory variable (homoscedasticity/equality of variance).
+3. Residuals are normally distributed. 
+
+The basic function in R for linear regression is lm() - linear model.
+Use: lm(response~explanatory, data=name of data frame)
+
+Example: can you predict brain size from body size in mammals?
+
+```{r}
+#install.packages("MASS")
+library(MASS) #example mammal data is in this package
+data(mammals) #load the data from the MASS package
+head(mammals) #see first six rows
+
+#Run the regression of brain size against body size:
+lm.mammals<-lm(brain~body, data=mammals)
+
+#p-value by anova:
+anova(lm.mammals)
+
+#slope (effect size), intercept, and p-value by summary:
+summary(lm.mammals)
+```
+
+### Model diagnostics
+
+```{r}
+par(mfrow=c(2,2)) # plotting window is a 2x2 grid for four plots
+plot(lm.mammals) #the two elephants are obvious outliers
+
+shapiro.test(lm.mammals$residuals) #the residuals are not normally distributed
+```
+
+### Regression on transformed data
+The two elephants had such large body sizes they became outliers. Perhaps the relationship is better expressed between log(body size) and log(brain size). Taking the log reduces the influence of large observations (making the data less skewed).
+
+```{r}
+#The linear regression with each variable log-transformed:
+#in R, log means ln (ie base e). 
+
+lm.log_mammals<-lm(log(brain)~log(body), data=mammals)
+
+par(mfrow=c(2,2))
+plot(lm.log_mammals) # the skewness is reduced, the plots are easier to read
+
+shapiro.test(lm.log_mammals$residuals) #the residuals are now normally distributed
+
+#slope, intercept, and p-value:
+summary(lm.log_mammals)
+
+```
+
+## Mutliple regression
+
+Multiple regression is used to estimate the relationship between multiple explanatory variables and a continuous response variable.
+
+The explanatory variables can be continuous or categorical. A mix of continuous and categorical explanatory variables is often called an ANCOVA. 
+
+Interactions among explanatory variables in how they affect the response can also be explored. 
+Use: lm(response~X1+X2+X1*X2+..., data=name of data). Here X1, etc. refer to explanatory variables. The asterisk denotes an interaction. 
+
+Example: Predicting zooplankton biomass at Guadeloupe. A transect line was run across a reef at Guadeloupe and zooplanton biomass and environmental variables were measured.
+
+Raw data available from http://www.esapubs.org/archive/ecol/E085/050/#suppl-1.htm#anchorFilelist
+
+
+```{r}
+
+zooplankton_data<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/guadeloupe.csv", header=TRUE)
+
+head(zooplankton_data)
+# Response variable: log-transformed zooplankton biomasses of two size classes
+# Spatial variable: coordinate (km) of the sampling site along the transect.
+# Environmental variables: dissolved oxygen (mg/L), salinity (psu), wind speed (m/s), phytoplankton biomass (log-transformed, original units: ?g/L), turbidity (NTU), swell height (m).
+
+#First combine biomass of the two size classes into single biomass measurement:
+zooplankton_data$Ln_zoo_biomass<-log(exp(zooplankton_data$Ln_zoo_biomass_small)+exp(zooplankton_data$Ln_zoo_biomass_large)) #because I received the data log-transformed, I use exp to put back into original units, sum the two classes together, then log-transform the data again.
+
+#Model zooplankton biomass as a function of distance along transect, dissolved oxygen, salinity, wind speed, and phytoplankton biomass. I've decided to model an interaction between dissolved oxygen and salinity as an example. You can include all possible interactions if you want, and have enough data to do so.
+
+#run the multiple regression model:
+lm.multiple<-lm(Ln_zoo_biomass~Transect_Dist+Diss_Oxygen*Salinity+Wind_speed+Phytoplankton_biomass, data=zooplankton_data)
+
+#get the slopes, intercept, and p-values:
+summary(lm.multiple)
+anova(lm.multiple)
+
+#model diagnostic plots
+par(mfrow=c(2,2))
+plot(lm.multiple)
+
+#normality of the residuals:
+shapiro.test(lm.multiple$residuals)
+```
+
+### ANCOVA
+ANCOVA is a special kind of linear regression where a continuous covariate with the potential to confound an effect of interest is controlled for in the analysis. YOu can also control for interactions between categorical and continuous variables.
+
+ANCOVA assumptions:
+1. Independence of data
+2. Linear relationship between response and the continuous covariate
+3. Normality of residuals
+4. Variance is equal across for all values of categorical and continuous variables
+
+Additionally, if you do not include an interaction between categorical and continuous explanatory variables:
+5. Slope is the same across all levels of categorical factor.
+
+Use: lm(y~X1+X2, data=data); y=response, X1 is categorical factor, X2 is continuous variable
+With ineraction: lm(y~X1*X2, data=data)
+
+Example: naked mole rats differ in activity levels (workers vs lazy caste members). You would expect differences in energy expenditure between these two castes. However, the two castes may differ in body size, which would also affect energy expenditure. If lazy rats are bigger, they will expend more energy independent of their activity level. The effect of body size needs to be controlled to see the effect of caste membership.
+```{r}
+MoleRats<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/MoleRats.csv", header=TRUE)
+head(MoleRats)
+
+ancova.out<-lm(lnenergy~lnmass+caste, data=MoleRats) #no interaction
+ancova.int<-lm(lnenergy~lnmass*caste, data=MoleRats) #interaction allows for different slope for different groups
+
+summary(ancova.int) #slopes, intercepts, p-values
+summary(ancova.out) #slopes, intercepts, p-values
+
+#Diagnostic plots
+par(mfrow=c(2,2))
+plot(ancova.out)
+
+```
+
+### Plot of data for ANCOVA
+```{r}
+plot(lnenergy~lnmass, col=as.factor(caste), data=MoleRats, pch=16) #I factor "caste", as that means it will be represented by a number in the plot function - and the col argument uses numbers to denote colours.
+abline(ancova.out$coefficients[1], ancova.out$coefficients[2]) # line for lazy mole rats (which are the baseline)
+abline(ancova.out$coefficients[1]+ancova.out$coefficients[3], ancova.out$coefficients[2], col=2) #adds difference to the intercept due to worker caste
+legend(4,5,c("Lazy", "Worker"), col=c("black", "red"), pch=16) #adds a legend at x=4 y=5
+```
+
+## Generalized linear models
+
+Generalized linear models (GLMs) model relationships in data that are not normal. For instance, count data inherently have a variance that increases with the mean. Modelling based on the Poisson or negative binomial distribution is more appropriate than the normal distribution.
+
+### Poisson regression
+
+The Poisson distribution is for count data where the variance equals the mean.
+
+Use: glm(y~X1+X2+..., family = "poisson", data = name of data) where y = response and X1, etc. = explanatory variables.
+
+Example: Understand how counts of scallopped hammerhead sharks made at a seamount in the Pacific have changed through time and what relationship they have to sea surface temperature (SST) and a measure of the El Nino (ONI) while controlling for visibility.
+
+```{r}
+hammerhead_sharks<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/Hammerheads.csv", header=TRUE)
+head(hammerhead_sharks)
+
+#Run the GLM:
+glm.poisson<-glm(Hammerheads~Year+SST+ONI+Visibility, family = "poisson", data=hammerhead_sharks, na.action = "na.fail") #model the relationship between hammerhead counts and year, SST, ONI, and visibility assuming Poisson distribution. na.action="na.fail" means the model will not run if NAs exist in any of the explanatory variables - this is necessary for the dredge function below but can be deleted otherwise.
+
+#Get the coefficients (intercept, slopes) and p-values from a Wald's Z-test:
+summary(glm.poisson)
+
+#Get the AIC:
+AIC(glm.poisson)
+
+#Compare AIC among suite of candidate models:
+#install.packages("MuMIn")
+library(MuMIn) #dredge function is in MuMIn
+
+glm.poisson.dredge<-dredge(glm.poisson) #list of all possible sub-models (each differing in one explanatory variable)
+glm.poisson.dredge
+```
+
+### Negative Binomial Models
+
+When the variance of count data increases faster than the mean, the data are "overdispersed."
+
+The negative binomial distribution lets variance increase faster than the mean, and negative binomial models model this variance explicity with a dispersion parameter. 
+
+The glm function does not include the negative binomial family, so use the glm.nb() function from the MASS package.
+
+Use: glm.nb(y~X1+X2+..., data= name of data) where y = response and X1, etc. = explanatory variables. No need for the "family" argument.
+
+```{r}
+library(MASS)
+hammerhead_sharks<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/Hammerheads.csv", header=TRUE)
+head(hammerhead_sharks)
+
+#Run the GLM:
+glm.negbin<-glm.nb(Hammerheads~Year+SST+ONI+Visibility, data=hammerhead_sharks, na.action = "na.fail") #model the relationship between hammerhead counts and year, SST, ONI, and visibility assuming negative binomial distribution. na.action="na.fail" means the model will not run if NAs exist in any of the explanatory variables - this is necessary for the dredge function below but can be deleted otherwise.
+
+#Get the coefficients (intercept, slopes) and p-values from a Wald's Z-test:
+summary(glm.negbin)
+
+#Get the AIC and compare to Poisson model (since Poisson model is nested within negative binomial model):
+AIC(glm.negbin, glm.poisson) # AIC of negative binomial model is much lower, indicating it has a better fit to the data than the Poisson model
+
+#Compare AIC among suite of candidate models:
+#dredge function is in MuMIn package
+
+glm.negbin.dredge<-dredge(glm.negbin) #list of all possible sub-models (each differing in one explanatory variable)
+glm.negbin.dredge
+
+```
+
+### Binomial models (ie logistic regression)
+Binomial distribution represents data that are counts of "successes" from a total number of trials or yes/no (ie successes from one trial - called the Bernoulli trial).
+
+Bernoulli use: glm(y~X1+X2+..., family = "binomial", data= name of data)
+
+Bernoulli example: Relationship between whether or not (1 or 0) dengue was recorded any time between 1961 and 1990 and humidity, temperature, and tree cover in the DAAG package.
+
+Binomial use: glm(y~X1+X2+..., weights=w, family = "binomial", data= name of data) where "w" is the number of "trials" (ie the maximum possible count) and y is the proportion (ie between 0 and 1) of those total number of trails that were "successes."
+
+Binomial example: Test if an experimental herbicide is effective in removing invasive species. Look for the species at 10 replicate sites in each of the pesticide and control treatments. Data are number of quadrats that included the invasive species, as well as annual precipitation per site as a potential confounding variable. There were 15 quadrats maximum per site, but some sites received fewer quadrats.
+
+
+```{r}
+
+#install.packages("DAAG")
+library(DAAG)
+
+#load dengue data
+data(dengue)
+head(dengue)
+
+#Bernoulli example:
+#Run the GLM for Bernoulli data:
+glm.bernoulli<-glm(NoYes~humid+temp+trees, family = "binomial", data=dengue) #model the relationship between dengue presence and humidity, temperature, and tree cover assuming a Binomial distribution. 
+
+#Get the coefficients (intercept, slopes) and p-values from a Wald's Z-test:
+summary(glm.bernoulli)
+
+#Get the AIC:
+AIC(glm.bernoulli)
+
+#Binomial example:
+invasive_data<-data.frame(Treatment=rep(c("Pesticide", "Control"), rep(10,2)), Number_of_Quadrats=c(15,15,11,14,15,15,13,14,15,15,12,10,15,15,15,14,15,15,13,15), InvasiveSpecies=c(4,3,5,4,2,1,1,8,6,3,4,7,8,10,14,6,6,5,7,6), Precip=c(383,654,1203,1200,784,489,964,451,478,1478,547,964,1577,621,573,871,654,982,784,1482)) #InvasiveSpecies represents number of quadrats that included the invasive species. Number_of_Quadrats is the number of quadrats placed at a site.
+invasive_data$ProportionInvasive<-invasive_data$InvasiveSpecies/invasive_data$Number_of_Quadrats #create a column representing what proportion of total quadrats included the invasive species
+
+#Run the GLM for Bernoulli data:
+glm.binomial<-glm(ProportionInvasive~Treatment+Precip, weights=Number_of_Quadrats, family = "binomial", data=invasive_data) #model the relationship between invasive species presence and the treatment while controlling for precipitation effects, assuming a Binomial distribution. 
+
+#Get the coefficients (intercept, slopes) and p-values from a Wald's Z-test:
+summary(glm.binomial)
+
+#Get the AIC:
+AIC(glm.binomial)
+```
+
+## Polynomial regression
+You can model a polynomial relationship between a response and an explanatory variable using the poly() and I() functions.
+
+poly(x, exponent) is for orthogonal polynomials (ensure polynomial terms are independent).
+I() is for regular polynomials.
+
+Use: 
+For quadratic
+1. lm(y~poly(X1,2)+..., data=data name) 
+2. lm(y~X1+I(X1^2)+..., data=data name)
+
+For cubic:
+1. lm(y~poly(X1,3)+..., data=data name) 
+2. lm(y~X1+I(X1^3)+I(X1^3)+..., data=data name)
+
+These functions can be expanded to higher degrees by changing the exponent in poly or adding more X terms in I(). 
+
+The function can also be used in glm(). The example below expands on the scallopped hammerhead shark example from Poisson generalized linear models, now assuming a quadratic relationship between hammerhead count and sea surface temperature (SST).
+
+```{r}
+hammerhead_sharks<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/Hammerheads.csv", header=TRUE)
+head(hammerhead_sharks)
+
+#Run the GLM (including original without quadratic for comparison):
+
+#Orthogonal polynomial regression:
+glm.poisson.quad.orth<-glm(Hammerheads~Year+poly(SST,2)+ONI+Visibility, family = "poisson", data=hammerhead_sharks, na.action = "na.fail") #model the relationship between hammerhead counts and year, SST, ONI, and visibility assuming Poisson distribution and quadratic relationship to SST. na.action="na.fail" means the model will not run if NAs exist in any of the explanatory variables - this is necessary for the dredge function below but can be deleted otherwise.
+
+#Regular (not orthagonal) polynomial regression:
+glm.poisson.quad<-glm(Hammerheads~Year+SST+I(SST^2)+ONI+Visibility, family = "poisson", data=hammerhead_sharks, na.action = "na.fail") #model the relationship between hammerhead counts and year, SST, ONI, and visibility assuming Poisson distribution and quadratic relationship to SST. na.action="na.fail" means the model will not run if NAs exist in any of the explanatory variables - this is necessary for the dredge function below but can be deleted otherwise.
+
+glm.poisson<-glm(Hammerheads~Year+SST+ONI+Visibility, family = "poisson", data=hammerhead_sharks, na.action = "na.fail") #original from Poisson GLM example with no quadratic
+
+#Get the coefficients (intercept, slopes) and p-values from a Wald's Z-test:
+summary(glm.poisson.quad.orth)
+summary(glm.poisson.quad)
+
+#Get the AIC:
+AIC(glm.poisson, glm.poisson.quad.orth, glm.poisson.quad) #notice the choice of orthogonal or not does not change the fit (AIC)
+
+#Compare AIC among suite of candidate models:
+#install.packages("MuMIn")
+library(MuMIn) #dredge function is in MuMIn
+
+glm.poisson.dredge.quad<-dredge(glm.poisson.quad.orth) #list of all possible sub-models (each differing in one explanatory variable)
+glm.poisson.dredge.quad
+
+```
+
+## Generalized additive models
+
+Generalized additive models (GAMs) are useful when a non-linear relationship is expected between the response and an explanatory variable, but the exact nature of that relationship is unknown. GAMs fit "splines" to the data - linear or polynomial (ie cubic) relationships to sections of the data that are joined at the "knots" (where the data were divided).
+
+Use: gam(y~s(X1)+..., family="poisson", data=data name) where s(X1) means we are fitting a model with splines/non-linear relationship to X1. Can change "poisson" to "gaussian" (for normal) or "binomial" or "negbin" or other distributions.
+
+The gam() function is in the mgcv package.
+
+```{r}
+#install.packages("mgcv")
+library(mgcv)
+
+hammerhead_sharks<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/Hammerheads.csv", header=TRUE)
+head(hammerhead_sharks)
+
+#Run the GLM:
+gam.out<-gam(Hammerheads~Year+s(SST)+ONI+Visibility, family = "poisson", data=hammerhead_sharks) #fit SST with a "smooth" term (ie splines)
+
+#Visualize the non-linear relationship fit between hammerhead count and SST:
+plot(gam.out)
+
+#Get the coefficients (intercept, slopes) and p-values from a Wald's Z-test:
+summary(gam.out)
+
+#Get the AIC:
+AIC(gam.out)
+
+```
+
+## Non-linear models
+
+Models that are linear in the parameters can be fit with gam or polynomials using lm() if non-linear relationships exist between response and explanatory variables, but models that are non-linear in the parameters need another function - nls().
+
+Use: nls(y~"insert non-linear equation here", start=list("list starting values for parameters"), data=data name). The starting values are rough guesses to get the function started in fitting the model. See the example below. The "y" needs to be the name of your response variable in your data frame. The x value specified in your equation/formula needs to be called the same thing as its column in the data frame. 
+
+Example: fit a von-Bertalanffy growth curve to sturgeon length-age data.
+
+The von-Bertalanffy function is: Length (at age) = L_infinity(1-exp(-k(age-t0))) where t is the age and t0 is the age when length is zero and L_infinity is asymptotic maximum length.
+
+
+```{r}
+
+#make the von-Bertalanffy function 
+
+#Simulate some data for the example:
+von_Bert<-function(age, t0, L_infinity, k) {L_infinity*(1-exp(-k*(age-t0)))} #von Bert function for simulating data in the next line.
+salmon<-data.frame(age=rep(1:6, 20), length=rnorm(120, von_Bert(age=c(1:6), t0=0.63, L_infinity=927, k=0.79), sd=50)) # I have simulated some salmon age-length data with known parameters. We can check that the nls function gets the right values!
+
+nonlin_mod<-nls(length~L_infinity*(1-exp(-k*(age-t0))),start=list(t0=0.2,L_infinity=1000,k=1), data=salmon) #I have my y "length" versus the von Bert formula, with "age" as my x. The nls function will search for the best fit values for the other parameters (t0, L_infinity, k) starting its search from the vaues given. List starting values for each parameter, make an educated guess (ie remember L_infinity is max length - use biological interpretations of parameters to estimate good starting values). The names of the y- and x-variables (ie length and age, respectively) must match that in the data frame. 
+
+summary(nonlin_mod) #get estimates and significance for each parameter
+
+#Plot the data and the curve:
+plot(length~age, data=salmon, pch=16)
+#get the model coefficients to plot the curve specified by the nls model:
+t0_estimate<-coef(nonlin_mod)[1] #t0 is the first coefficient in coef(nonlin_mod)
+L_infinity_estimate<-coef(nonlin_mod)[2] #L_infinity is the second coefficient in coef(nonlin_mod)
+k_estimate<-coef(nonlin_mod)[3] #k is the third coefficient in coef(nonlin_mod)
+age_x<-c(1:6) #want to plot for ages 1 to 6
+curve(L_infinity_estimate*(1-exp(-k_estimate*(x-t0_estimate))), from=1, to=6, add=TRUE, col="red") #add the curve from the model to the plot. The curve() function gives the y-values (ie lengths) from the given expression/formula evaluating the x-value (in this case, age) from the value in "from" to the value in "to" - ie from age 1 to age 6. add=TRUE ensures the curve is added to the plot we just made above.
+
+#Get the AIC:
+AIC(nonlin_mod)
+
+```
+
+## AIC and Likelihood Ratio Tests
+
+AIC can be used to compare numerous candidate models based on their fit (likelihood), penalized by number of parameters to account for overfitting. The dredge function in the MuMIn package will calculate the AIC for all possible subsets of your model, and include delta-AICs and model weights.
+
+Likelihood ratio tests are another way to assess significance of a parameter (besides t-tests/Wald z-tests provided by summary function). They will compare the increase in likelihood from a simpler model to a more complex one and give a p-value representing if that increase represents a significant increase in fit (meaning the model explains something more biologically) or if it is just overfitting. Models must be nested. 
+
+```{r}
+hammerhead_sharks<-read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/Hammerheads.csv", header=TRUE)
+head(hammerhead_sharks)
+
+#Run the GLM:
+glm.poisson<-glm(Hammerheads~Year+SST+ONI+Visibility, family = "poisson", data=hammerhead_sharks, na.action = "na.fail") #model the relationship between hammerhead counts and year, SST, ONI, and visibility. na.action="na.fail" is needed for dredge() to work - it means the model will not run if there are NAs in any explanatory variable.
+
+#Use the function AIC() to get the AIC of one or more models:
+AIC(glm.poisson, update(glm.poisson, ~.-Year)) #compare AIC of full model to updated model lacking Year
+
+#dredge for the best candidate model among all possible subsets of your full model:
+library(MuMIn)
+dredge(glm.poisson)
+
+```
+
+# Permutation tests
+
+Permutation tests are a type of non-parametric test used when the assumptions of a parametric test (ie t-tes, ANOVA, regression) are not met. Permutation tests resample from the data, ignoring the explanatory variables, to generate a null-distribution of the response variable assuming explanatory variables do not matter. The test compares the data to this null-distribution generated by permutation to see if the data fall within the center of the distribution (high p-value) or in the extremes (small p-value). 
+
+Use: 
+adonis(y~x, data=data name) in the vegan package
+
+oneway_test(y~x,data=data name) in the coin package
+
+The coin package lets you calculate asymptotic p-values (like nonparametric tests) or approximate p-values (taking many random samples) or exact p-values (from all possible combinations).
+
+Example: compare number of ant colonies in a field versus a forest
+
+Example origin and more code here: https://mac-theobio.github.io/QMEE/permutation_examples.html
+
+```{r}
+#the data:
+ants<-data.frame(place=rep(c("field", "forest"), rep(5,2)), colonies=c(12,9,12,10,8,6,4,6,7,10))
+
+#plot the data:
+boxplot(colonies~place, data=ants)
+
+#run a permutation test:
+#install.packages("coin")
+library(coin)
+#your categorical variable needs to be a factor:
+ants$place<-as.factor(ants$place)
+
+#Asymptotic (the default - similar to rank-based non-parametric tests)
+oneway_test(colonies~place,data=ants)
+
+#Exact (all possible permutations):
+oneway_test(colonies~place,data=ants,distribution="exact")
+
+#Approximate (random-sampling):
+oneway_test(colonies~place,data=ants,distribution=approximate(nresample=9999))
+
+
+```
+
+## Permutation test - manual approach
+
+You can make your own permutation test, altering the test statistic calculated in each permutation using for loops. 
+
+For each permutation of the data, you will calculate some test statistics (difference in means between groups, a t-statistic, an F-statistic). At the end, you compile a distribution of these test statistics calculated from these permutations - a permutation-generated null distribution for your test statistic. Compare the test statistic of your actual data to this null distribution representing the permutations, and see if it falls in the extreme 5% (the tails). For a permutation test to replace an ANOVA, a F-statistic may be a good choice as a test statistic to calculate each permutation.
+
+For more: https://mac-theobio.github.io/QMEE/permutation_examples.html
+```{r}
+set.seed(66) ##ensures random processes "start" at the same place in the computing, so each time you run this code, you will get the same answers, for reproducibility, despite it being random. Pick any number, as long as you keep it consistent every time you run this code.
+nsim <- 1000 #number of simulations/permutations
+res_mean <- numeric(nsim) ## make a numeric vector (ie stores numbers) to save the differences in means in each permutation
+res_t <- numeric(nsim) ## make a numeric vector to save the t-statistics in each permutation
+#this for loop will run the code in the {} nsim times.
+for (i in 1:nsim) {
+    ## standard approach: scramble response value
+    perm <- sample(nrow(ants)) #sample all rows of ants in random order
+    bdat <- transform(ants,colonies=colonies[perm]) #combine these randomly sampled rows with the explanatory variable column (ie forest or field) of the original data frame. This scrambles the response variable column across the explanatory variables. 
+
+## compute & store test statistic (eg. difference in means, t-statistic); store the value
+# change this code for test statistic of your liking:
+  #NOTE I give two examples (difference in means and t-statistic, but you need only one)
+   #difference in means:
+     agg <- aggregate(colonies~place,FUN=mean,data=bdat) #compute means by group (field vs forest)
+  res_mean[i] <- agg$colonies[1]-agg$colonies[2] #save the difference in means for this permutation of the data in the numeric vector
+  #t-statistic (difference in means divided by standard error):
+    tt <- t.test(colonies~place,data=bdat,var.equal=TRUE) #calculate t-statistic
+    res_t[i] <- tt$statistic #save this permutation's t-statistic in the numeric vector
+
+}
+obs_mean <- mean(ants[ants$place=="field","colonies"])-
+    mean(ants[ants$place=="forest","colonies"]) #calculate your observed difference in means (from your actual data), which you will compare to the null distribution you just generated in the foor loop (saved in res_mean)
+obs_t <- t.test(colonies~place,data=bdat,var.equal=TRUE)$statistic #calculate t-statistic for the observed data
+
+## append the observed value to the list of results
+res_mean <- c(res_mean,obs_mean) #your observed data count as a permutation, so you add it to the permutation results
+res_t <- c(res_t,obs_t) #add observed t-statistic to permutation-generated t-statistics
+
+#histogram representing your permutation-generated null distribution:
+hist(res_mean,col="gray",las=1,main="")
+abline(v=obs_mean,col="red") #red line for where the observed data fall (is it in the center or extreme?)
+
+#histogram using t-statistic as test statistic:
+hist(res_t,col="gray",las=1,main="")
+abline(v=obs_t,col="red")
+
+#Results of the permutation test:
+mean(abs(res_mean)>=abs(obs_mean)) #p-value
+mean(abs(res_t)>=abs(obs_t)) #p-value
+
+```
+
+
+# Multivariate statistics
+
+For when you have multiple response variables, and what to visual and investigate how they co-vary (especially used in community ecology with presence/absence or abundance of species as multiple responses across many sites).
+
+Data should be set up as a "species by site" matrix - species (or other response variable) as columns and sites (or other sampling unit) as rows - matrix is filled in by values of each response (eg. species abundance) for each sampling unit (eg site).
+
+The package "vegan" will handle most analyses.
+
+The package "factoextra" helps make visualizations of ordination results.
+
+For information on ordination, check out "Numerical Ecology with R" by Daniel Borcard, Francois Gillet, and Pierre Legendre.
+
+This code loads the package and data for all the multivariate statistics examples.
+```{r}
+#install.packages("vegan")
+library(vegan)
+#install.packages("factoextra")
+library(factoextra)
+
+#load in example "dune" data set:
+data(dune) #data on abundance of 30 species at 20 sites
+head(dune)
+
+data(dune.env)#environmental data on those 20 sites
+head(dune.env)
+```
+
+## Principal Component Analysis (PCA)
+
+The function prcomp() runs a PCA in base R. The function rda() runs "redundancy analysis" (RDA) - which is a PCA constrained by explanatory variables. Use "~1" to indicate no explanatory variables and run just a PCA. You can include explanatory variables to run an RDA.
+
+The FactoMineR package is also useful. Check out this video (and related videos) by the package author: https://www.youtube.com/watch?v=pks8m2ka7Pk.
+
+Other plotting options: https://cran.r-project.org/web/packages/ggfortify/vignettes/plot_pca.html
+
+```{r}
+#Two functions to run a PCA:
+
+pca.out_base<-prcomp(dune)
+pca.out_vegan<-rda(dune~1)
+
+#Scree plots (percentage of variation explained by each principal component axis):
+screeplot(pca.out_vegan) #drop-off after second axis, suggesting only first two axes need examining
+fviz_eig(pca.out_base)
+
+#Examine biplots:
+#scaling=1 (for individuals/sites/samples):
+biplot(pca.out_vegan, scaling=1)
+
+#scaling=2 (for species/response):
+biplot(pca.out_vegan, scaling=2)
+
+#only show the individuals/sites/samples:
+biplot(pca.out_vegan, scaling=1, display="sites")
+
+#only show the species/response:
+biplot(pca.out_vegan, scaling=1, display="species")
+
+#Summary of results - proportion of variance explained, species scores, PC values for each site.
+summary(pca.out_vegan)
+
+#####Using factoextra on prcomp results:######
+#check out: http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/118-principal-component-analysis-in-r-prcomp-vs-princomp/#package-for-pca-visualization
+
+#Coloured plot of sites:
+fviz_pca_ind(pca.out_base,
+             col.ind = "cos2", # Color by the quality of representation (ie how well the site is represented by the PCA)
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+
+#Plot of contributions of each species/response to each axis for base PCA:
+fviz_pca_var(pca.out_base,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+#Coloured biplot of sites and species/responses
+fviz_pca_biplot(pca.out_base, repel = TRUE,
+                col.var = "#2E9FDF", # Response variables color
+                col.ind = "#696969"  # Individuals color
+                )
+#Visualize categorical grouping variable:
+#Add ellipses representing the average and 95% confidence interval for sites by land use type (or other grouping variable)
+fviz_pca_ind(pca.out_base,
+             col.ind = as.character(dune.env$Use), # color by groups (in this case "Use")
+             palette = c("darkred",  "darkblue", "gold"),
+             addEllipses = TRUE, # Concentration ellipses
+             ellipse.type = "confidence",
+             legend.title = "Land use",
+             repel = TRUE
+             )
+```
+
+## Correspondence analysis
+
+Correspondence analysis (CA) investigates relative relationships between groups of variables based on contigency table - ie interpret your "species by site" matrix as a contigency table of frequencies. For instance, unlike PCA, CA investigates variance in relative abundance or values among species/responses rather than using the absolute abundance or values in the column. Are some species or groups of species associated with some sites?
+
+The function cca() in "vegan" runs a canonical correspondance analysis (CCA) - see below. But if you use "~1" it will run a normal CA.
+
+Also check out ca() in the "ca" package, CA() in the FactoMineR package, and corresp() in the "MASS" package. Check out: https://www.gastonsanchez.com/visually-enforced/how-to/2012/07/19/Correspondence-Analysis/
+
+```{r}
+#Run the CA:
+ca.out<-cca(dune~1)
+
+#Scree plots (percentage of variation explained by each principal component axis):
+screeplot(ca.out) #drop-off after second axis, suggesting only first two axes need examining
+
+#Examine biplots - NOTE use plot() here:
+#scaling=1 (for individuals/sites/samples):
+plot(ca.out, scaling=1)
+
+#scaling=2 (for species/response):
+plot(ca.out, scaling=2)
+
+#only show the individuals/sites/samples:
+plot(ca.out, scaling=1, display="sites")
+
+#only show the species/response:
+plot(ca.out, scaling=1, display="species")
+
+#Summary of results - proportion of variance explained, species scores, PC values for each site.
+summary(ca.out)
+
+```
+
+## Principal coordinates analysis (PCoA)
+
+PCA and CA represent the Euclidean and Chi-square distance between sites/samples, respectively, in the ordination plots. In ecology, other ecological distance metrics are more appropriate to preserve and represent on the ordination (ie Bray-Curtis, Jaccard). Principal coordinates analysis (PCoA) analyses a matrix of dissimilarities (ie distances between pairs of sites/samples) computed from these other distance metrics. 
+
+The function capscale() in "vegan" runs PCoA. You include "~1" after your species by site matrix to run a PCoA and NOT a canonical analysis with explanatory variables (db-RDA - see below).
+
+```{r}
+#Run the PCoA (also called metric multidimensional scaline - MDS):
+
+pcoa.out_bray<-capscale(dune~1, distance="bray") #Using Bray-Curtis distance
+pcoa.out_jaccard<-capscale(dune~1, distance="jaccard") #Using Jaccard distance
+
+#Distances can also be calculated first using vegdist from "vegan"
+bray_dist<-vegdist(dune, distance="bray")
+jaccard_dist<-vegdist(dune, distance="jaccard", binary=TRUE) #binary=TRUE caculates distance based on presence-absence data
+
+
+#Scree plots (percentage of variation explained by each principal component axis):
+screeplot(pcoa.out_bray) #drop-off after second axis, suggesting only first two axes need examining
+
+#Examine biplots - NOTE use plot() here:
+#scaling=1 (for individuals/sites/samples):
+plot(pcoa.out_bray, scaling=1)
+
+#scaling=2 (for species/response):
+plot(pcoa.out_bray, scaling=2)
+
+#only show the individuals/sites/samples:
+plot(pcoa.out_bray, scaling=1, display="sites")
+
+#only show the species/response:
+plot(pcoa.out_bray, scaling=1, display="species")
+
+#Summary of results - proportion of variance explained, species scores, PC values for each site.
+summary(pcoa.out_bray)
+
+```
+
+## Non-metric multidimensional scaling
+
+Like PCA, CA, and PCoA, non-metric multidimensional scaling (NMDS) represents multi-dimensional response data in reduced dimensions (typically 2). Unlike PCA, CA, and PCoA, which preserve certain distances, NMDS uses rank orders (ie it preserves the order of data points), making it flexible for wide variety of data types. The program keeps moving the data points in the reduced dimensions until the stress (a representation of how well the representation represents the original data) is low (best <0.1, okay <0.2). The process starts with a matrix of distances (ie Bray-Curtis) and compares the rank-based ordination to those distances to compute the stress using regression. 
+
+The package is "vegan" and the function metaMDS().
+
+For more info: https://jonlefcheck.net/2012/10/24/nmds-tutorial-in-r/
+
+```{r}
+#Run the NMDS
+
+
+set.seed(2) #NMDS has some randomness, so set the seed to be consistent each time you run.
+
+NMDS.out<-metaMDS(dune, # Our community-by-species matrix
+                  distance = "bray", #compute Bray-Curtis distance matrix for use in NMDS
+                     k=2, # The number of reduced dimensions
+                  trymax=100) #maximum number of iterations tried
+#if it fails to converge, try increasing the number of iterations (trymax). If the stress is too high, maybe it cannot be accurately represented in two dimensions, so increase k.
+
+#Examine Shepard (stress) plot - large scatter around the line indicates lots of stress (NMDS is a poor representation of the data)
+stressplot(NMDS.out)
+
+#Examine plots
+#can use plot: open circles are sites, red crosses are species:
+plot(NMDS.out)
+
+#Plots with labels: first make empty plot with ordiplot() (type="n" specifies the plot is empty) then add the labels for species and sites using orditorp().
+ordiplot(NMDS.out,type="n")
+orditorp(NMDS.out,display="species",col="red",air=0.01)
+orditorp(NMDS.out,display="sites",cex=1.25,air=0.01)
+
+#Is there clustering associated with a factor/treatment/categorical variable:
+#example: visualizing effects of land use on ecological community composition:
+
+#look at convex hulls containing all the points for each group:
+ordiplot(NMDS.out,type="n")
+ordihull(NMDS.out,groups=dune.env$Use,draw="polygon",col="grey90",label=F)
+orditorp(NMDS.out,display="species",col="red",air=0.01)
+orditorp(NMDS.out,display="sites",air=0.01,cex=1.25)
+
+#95% confidence ellipse based on a grouping/factor/treatment/categorical variable:
+
+colors<-c("red","blue", "gold") #the colours for the ellipses. Should be as many as you have groups. Goes in same order as levels(dune.env$Use) - so red for Hayfield, blue for Hay pasture and gold for Pasture.
+ordiplot(NMDS.out,display="sites") #special function for making pretty ordination plots (works for PCAs, etc. too)
+#Plot convex hulls with colors baesd on treatment
+for (i in unique (as.numeric(dune.env$Use))) { #for loop going through and making an ellipse for each level of your group (land use in this case)
+  ordiellipse(NMDS.out, #function for the ellipse
+  groups = as.numeric(dune.env$Use), show.group = i, col = colors[i], 
+    kind="sd", label = F, scaling=1, lwd=4)} 
+orditorp(NMDS.out,display="species",col="red",air=0.01) #puts species names on the plot
+
+#Summary of results - proportion of variance explained, species scores, PC values for each site.
+summary(pcoa.out_bray)
+
+```
+
+## Canonical analyses - RDA, CCA, db-RDA
+
+Canonical or constrained ordinations show variation explained by explanatory variables. Each canonical axis is a linear combination (regression model) of all explanatory variabes. Unconstrained axes are also computed to represent remaining residual variation unaccounted for by explanatory variables. 
+
+Canonical analysis examines relationship between a response matrix and exlanatory matrix, using both ordination techniques (ie PCA) and linear regression. 
+
+Use the same functions in vegan as for unconstrainted ordination above, but include explanatory variables in place of the "~1" ie CommunityData~EnvData
+
+```{r}
+#Run redundancy (RDA) - constrained PCA
+rda.out<-rda(dune~Use+Management+A1+Moisture+Manure, data=dune.env) #Run the RDA on the dune community using explanatory variabes in the dune.env data set. 
+
+#Run constrained correspondance analysis (CCA)
+cca.out<-cca(dune~Use+Management+A1+Moisture+Manure, data=dune.env) #Run the CCA on the dune community using explanatory variabes in the dune.env data set. 
+
+#Run distanced-based redundancy analysis - constrained PCoA
+dbRDA.out<-capscale(dune~Use+Management+A1+Moisture+Manure, distance="bray", data=dune.env) #Run the CCA on the dune community using explanatory variabes in the dune.env data set.
+
+#Code below is for all constrained analyses, although example is for RDA:
+
+#Scree plots (percentage of variation explained by each principal component axis):
+screeplot(rda.out) #drop-off after second canonical axis, suggesting only first two axes need examining
+
+#Examine biplots - NOTE use plot() here:
+#scaling=1 (for individuals/sites/samples):
+plot(rda.out, scaling=1)
+
+#scaling=2 (for species/response):
+plot(rda.out, scaling=2)
+
+#only show the individuals/sites/samples:
+plot(rda.out, scaling=1, display="sites")
+
+#only show the species/response:
+plot(rda.out, scaling=1, display="species")
+
+#only show the constraints/explanatory variables:
+plot(rda.out, scaling=1, display="cn")
+
+#Summary of results - proportion of variance explained, species scores, PC values for each site.
+summary(rda.out)
+
+```
+
+
+# If else statements
+
+Resource: https://www.datamentor.io/r-programming/if-else-statement/
+
+If else statements are used to run code based on conditions. A Boolean statement is supplied (something that can be evaluated as TRUE or FALSE), and if TRUE, the code following the if statement is run. An optional else statement runs if the Boolean is FALSE. 
+
+There are two ways to run if else statements. 
+
+Simple if else statements can be run using the ifelse() function. The ifelse function takes three arguments: the first is the Boolean (TRUE/FALSE) statement to evaluate, the second is what to do if it returns TRUE, the third what to do if it returns FALSE.
+
+ifelse() is often used on vectors to run functions to parts of the vector, but a different function (or nothing) on the rest.
+
+Example: if the mammal is big (greater than 100 kgs), log its brain mass, otherwise take the square root of brain mass, and save results to a new column in the data frame.
+
+``` {r}
+data(mammals)
+
+mammals$log_sqrt <- ifelse(mammals$body>100, log(mammals$brain), sqrt(mammals$brain))
+
+```
+
+You can also construct if else statements for more complicated computations like this:
+
+if (test that returns TRUE/FALSE) {
+  code/function to run
+}
+
+
+You can specify what to do when FALSE using else:
+
+
+if (test that returns TRUE/FALSE) {
+  code/function to run when TRUE
+} else {
+  code/function to run when FALSE
+}
+
+
+You can chain multiple if else statements:
+
+
+if (test that returns TRUE/FALSE) {
+
+  code/function to run
+
+  } else {
+  
+    if (second condition) {
+  
+    code/function to run
+  
+    } else {
+  
+      code/function to run
+  
+    }
+}
+
+``` {r}
+
+size <- 855
+type <- "bird"
+
+if (size > 1000) {
+  print("That's a big animal!")
+}
+
+if (size < 1000) {
+  print("That's a small animal!")
+}
+
+if (size >= 1000 & type == "bird") {
+  print("That's a big bird")
+} else {
+  if (size >= 1000 & type == "mammal") {
+    print("that's a big mammal")
+  } else {
+    if (size < 1000 & type!="bird") {
+      print("That's a small animal, can't tell what, but I know it's not a bird")
+    } else {
+      print("Wow that's a small bird!")
+    }
+  }
+}
+
+#Try changing size and type and see what happens
+
+```
+
+# Make your own function in R
+
+If you find yourself repeating (copying and pasting) code many times with only minor tweaks, it might be useful to make that code a function - then you only need to repeat the function name, with arguments representing those minor tweaks or the data used.
+
+You give the function a name and assign (using <- or =) the actual function to that name.
+
+Here's the function for calculating standard error
+``` {r}
+
+se_func <- function(x) { #put the arguments for your function in the (). This function takes a vector "x"
+  return(sd(x)/sqrt(length(x))) #use return to specify what the function should output. Using return is not always necessary, if the function is simple
+} #enclose the body of your function in brackets
+
+```
+
+This function takes a data frame and another function as argument and calculates that function over each column of the data frame. It also includes an example of a for loop (see For loops section below).
+
+``` {r}
+
+col_summary <- function(df, fun) {
+  result <- vector("numeric", length(df)) #initialize an empty vector to store results of for loop
+  for (i in seq_along(df)) {
+    result[i] <- fun(df[[i]])
+  }
+  return(result)
+}
+
+#use the function to calculate the mean, median of every column of the dune data set
+#NOTE this re-creates functionality from summary() and apply()
+
+col_summary(dune, mean)
+
+col_summary(dune, median)
+
+```
+
+# If else statements in functions
+
+If else statements can be used in functions. A TRUE/FALSE condition can be coded as an argument if you have different variations to run for different conditions. 
+
+When a value is supplied when the function is made, 
+
+Example: calculate SE for continuous numbers that can vary from negative infinity to infinity versus SE for proportions that vary between 0 and 1. Uses a nested if/else statement -- one statement within another
+
+``` {r}
+se_func_complete <- function(x, prop=FALSE) {
+  
+  if (prop==TRUE) {
+      
+    #check if numbers are between 0 and 1:
+    
+    if (min(x) < 0 | max(x) > 1) {
+      print("Error: Data should be bounded by 0 and 1")
+    } 
+    else {
+      return(sqrt(x*(1-x)/length(x))) #SE of proportion data (bounded by 0 and 1)
+    }
+    
+  } else {
+      
+      return(sd(x)/sqrt(length(x))) # SE of count/continuous data
+    
+  }
+
+}
+
+se_func_complete(c(2,3.3,4.5,99.2), prop=FALSE)
+se_func_complete(c(0.5,0.77,0.6,0.2,0.99), prop=TRUE)
+se_func_complete(c(2,3.3,4.5,99.2), prop=TRUE)
+
+
+```
+
+# Repetitive tasks in R
+
+Check out this resource: https://r4ds.had.co.nz/iteration.html
+
+If you need to run some function or code repeatedly, there are a few options to save you time and coding effort. 
+
+1. Make use of vectorization in R.
+
+  R is vectorized, meaning running a function on a vector applies that function to each element of that vector. Remember, columns of data frames are vectors! You can make use of your own functions this way too!
+
+2. Use the apply family. 
+  
+  The apply family of functions applies a function to every row, column, or element in a list. You can use these with your    own custom functions. You can make use of your own functions this way too!
+
+3. Use aggregate
+
+4. For loops
+  
+For example:
+```{r}
+mammals$brain+1
+```
+Adds 1 to every element of mammals$brain.
+
+Another example:
+Calculate the Shannon diversity for every row of the dune community data set:
+```{r}
+library(vegan)
+data(dune)
+data(dune.env)
+
+diversity(dune, index="shannon")
+```
+
+## The apply family
+
+The "apply" family of functions applies a function to every element of a row or column (apply) or for every element in a list (lapply, sapply). There are other functions in the family (vapply, tapply) but these are the ones you are most likely to use. NOTE: aggregate() (see below) is a good function to use instead of tapply(). 
+
+```{r}
+
+#Apply a function to every column of a data frame:
+apply(dune,2,function(x) sd(x)/sqrt(length(x))) #find the standard error of each species - 2 means apply to each column
+
+#Apply a function to every row of a data frame:
+apply(dune,1,function(x) sd(x)/sqrt(length(x))) #find the standard error of species counts at each site - 1 means apply to each row.
+
+#Apply a function to every element of a list
+#lapply will return a list
+#sapply will return a "prettier" array, matrix, or data frame to manipulate
+
+#first I'm going to make a list using the lapply function
+#remember data frames are lists of columns, so can also use lapply to apply function to every column and return a list:
+#I want to run a regression of abundance against A1 (a measure of soil thickness at the A1 horizon) for each species:
+regressions.out<-lapply(dune, function(x) lm(x~dune.env$A1)) #remember a data frame is a list of columns
+
+#Now I have a list of the regressions, one for each species. Remember - use $ or [[]] to retrieve elements of a list
+regressions.out[[1]] #gives me first regression in the list
+regressions.out$Anthodor #gives me the regression for Anthodor
+
+#I can use this list of regressions with lapply or sapply to retrieve just the coefficients for each species
+intercept_slopes<-lapply(regressions.out, coef) #get intercept and slope as a list accessible with $
+intercept_slopes_df<-sapply(regressions.out, coef) #get intercept and slope as a matrix/array
+#coef gets the coefficients from a regression object
+
+
+#NOTE: use colSums(), rowSums(), colMeans(), or rowMeans() for sums and means for columns and rows. 
+colSums(dune)
+rowMeans(dune)
+
+```
+ 
+## Aggregate
+Use aggregate to apply a function over groups/levels of a factor (eg mean weight in each treatment).
+
+
+```{r}
+
+#Find mean abundance of Anthodor by pasture type
+aggregate(dune$Anthodor, by=list(dune.env$Use), mean)
+
+#if the response and factor are in the same data frame:
+data.example<-data.frame(Anthodor=dune$Anthodor, Use=dune.env$Use)
+aggregate(Anthodor~Use, data=data.example, mean) #mean
+aggregate(Anthodor~Use, data=data.example, min) #minimum
+
+
+```
+
+## For loops
+
+The simplest way to achieve a repetitive task is to have R run the code for you in a loop. However, for loops are not very efficient, and most things can be achieved using R's vectorization, the apply family, and making your own functions.
+
+A for loop designates a variable that changes each time the looped code is run.
+
+Here's a for loop basic example:
+
+Take a list of numbers and find their square:
+
+``` {r}
+
+#make the data
+numberList <- c(22, 33,12,13,5,7,9)
+
+#Initialize an empty vector to store the results of your for loop
+squaredNumbers <- vector(mode = "numeric", length = length(numberList))
+
+#as the for loop runs, "i" in the code below will change, one after the other, to every element specified after "in". In this case, we use seq_along to generate the list of indices (ie positions) for numberList (the first element in numberList had index 1, the second has index 2, etc.). We then use the [] operator to extract the element at that position. So in the code below, the as the "i" is changed from 1 to 2 to 3, etc., in extract in turn the first, then the second, then the third, etc. element of numberList. Then we square that element and put it in the ith position (ie first, then second, then third position) of squaredNumbers, where we are storing the results. The point is: "i" in the code of the for loop changes to each value specified after "in", one after the other.
+
+for (i in seq_along(numberList)) { 
+  squaredNumbers[i] <- numberList[i]^2
+}
+
+squaredNumbers
+
+```
+
+
+NOTE this could be better achieved with simple vectorization:
+``` {r}
+squaredNumbersVectorization <- numberList^2
+
+squaredNumbers
+squaredNumbersVectorization
+
+```
+
+Here's another example that prints out various statements. I used two for loops, one nested in the other: 
+
+NOTE for the second for loop, I use "j" rather than "i" so they do not get confused. You can pick any letter, but the standard is "i" for the outer loop, then "j" for the inner loop. I also make use of an if else statement.
+
+``` {r}
+
+nouns <- c("roses", "violets", "daisies", "sugar cubes", "onions", "oranges")
+
+colours <- c("red", "blue", "white")
+
+tastes <- c("sweet", "gross", "juicy")
+
+for (i in seq_along(nouns)) {
+  if (i <= 3) {
+    for (j in seq_along(colours)) {
+      print(paste(nouns[i], "are", colours[j]))
+    }
+  } else {
+    for (j in seq_along(tastes)) {
+      print(paste(nouns[i], "are", tastes[j]))
+      ifelse((tastes[j]=="gross" & nouns[i]=="sugar cubes") | (tastes[j]=="sweet" & nouns[i]=="onions"), print("That's a lie"), print("That's so true!"))  #change if it is sugar cubes are gross or if onions are sweet
+    }
+
+  }
+}
+
+```
+NOTE something similar can be achieved with a function:
+
+```{r}
+
+printNouns <- function(noun, adjective, truth=TRUE) {
+  print(paste(noun, adjective, "Stop!", ifelse(truth, "That's so true!", "That's a lie!")))
+}
+
+#Notice each "noun" is getting its corresponding adjective in "c(colours, taste)" BUT every colour or taste is NOT being applied to every noun - the first noun gets the first colour, etc. I enough TRUE/FALSE statements for every noun. If you want every combination, the for loop is a good tool.
+printNouns(nouns, c(colours, tastes), truth=c(FALSE, FALSE, TRUE, FALSE, FALSE, TRUE))
+
+#can also use just one FALSE. The number of TRUE/FALSE's should be 1 or the same number as the length of nouns.
+printNouns(nouns, c(colours, tastes), truth=FALSE)
+
+```
+
+For loop to make multiple plots:
+
+Sometimes you want to make the same plot multiple times for different data.
+
+Example: plot the relationship of each dune species to Moisture
+
+``` {r} 
+#This will produce a plot for each dune species, and give a y-axis based on the name of that species
+
+dim(dune)
+
+par(mfrow=c(6,5), mar=c(3,5,1,1)) #set up plotting window - six rows, five columns for all thirty species
+
+#I generate a sequence from 1 to the number of columns in dune (ie number of species in dune; there is one species per column)
+#I use if else statements to ensure that the x-axis is drawn only on the bottom plots - the last five plots.
+for (i in 1:ncol(dune)) {
+    plot(dune[,i]~dune.env$Management, ylab=names(dune)[i], xlab="Management level", axes=F)
+  
+    if (i > 25) {
+      axis(1) # add x-axis
+    } 
+
+}
+
+```
+
+NOTE: this can be better achieved by making your own function:
+
+``` {r} 
+#This will make a function to make a box plot of a variable against Management
+
+plotDune <- function(x, x_axis=FALSE) {
+  plot(x~dune.env$Management, ylab="Abundance", xlab="Management level", axes=F)
+   if (x_axis) {
+      axis(1) # add x-axis
+    } 
+}
+
+
+#apply the function to every column:
+
+par(mfrow=c(6,5), mar=c(3,5,1,1)) #set up plotting window - six rows, five columns for all thirty species
+
+apply(dune, 2, plotDune, x_axis=TRUE)
+
+
+```
+
+
+For loop to add lines or points to a plot:
+
+Example: shark abundance relative to depth at sites around two marine protected areas in South Africa.
+``` {r} 
+
+#Read in the data:
+
+env <- read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/BRUV_environmentals.csv") #environmental data
+abundance <- read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/BRUV_abundance.csv") # shark and ray abundance
+
+sharkCounts <- abundance[,-c(1:4)] #remove extra columns from abundance data so it is only counts
+
+#establish colour palette to pull from, one colour for each shark:
+colours <- rainbow(ncol(sharkCounts)) #look up different colour palettes and try different ones
+
+#find the max abundance over all species to set plot's y limit:
+
+max <- max(sharkCounts)
+
+#for loop to plot relationship between each species and depth, as well as the regression line
+
+plot(sharkCounts[,1]~env$Depth, col=colours[1], pch=16, ylab="Abundance", xlab="Depth", ylim=c(0, max))#initialize plot with one species
+abline(lm(sharkCounts[,1]~env$Depth), col=colours[1],)
+
+#use for loop for remaining species
+for (i in 2:ncol(sharkCounts)) {
+  points(sharkCounts[,i]~env$Depth, col=colours[], pch=16, ylab="Abundance", xlab="Depth")#initialize plot with one species
+  abline(lm(sharkCounts[,i]~env$Depth), col=colours[i],)
+} 
+
+
+```
+Nested for loops to make multiple plots and add multiple lines to those plots:
+
+Example: separate plot for each protection level in each area, with different coloured lines and points for each species:
+
+``` {r} 
+
+#Read in the data:
+
+env <- read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/BRUV_environmentals.csv") #environmental data
+abundance <- read.csv("c:/Users/gjosg/Dropbox/R_Handbook_2020_UVic/Data/BRUV_abundance.csv") # shark and ray abundance
+
+sharkCounts <- abundance[,-c(1:4)] #remove extra columns from abundance data so it is only counts
+
+#establish colour palette to pull from, one colour for each shark:
+colours <- rainbow(ncol(sharkCounts)) #look up different colour palettes and try different ones
+
+#find the max abundance over all species to set plot's y limit:
+
+#for loop to plot relationship between each species and depth, as well as the regression line, in both protection levels of both areas:
+
+letters <- c("a)", "b)", "c)", "d)") #set up letters for plot titles
+RegionList <- unique(env$Region) # get unique regions
+ProtectionList <- unique(env$Protection) #get unique protection levels
+
+
+par(mfrow=c(2,2)) #set up place to put the plot
+
+for (i in seq_along(RegionList)) {# each unique region
+  for (j in seq_along(ProtectionList)) { #each unique protection level
+    temp.env <- subset(env, Region == RegionList[i] & Protection == ProtectionList[j]) #subset environmental variables
+    temp <- subset(sharkCounts, env$Region == RegionList[i] & env$Protection == ProtectionList[j])
+    max <- max(temp)
+  
+    plot(temp[,1]~temp.env$Depth, col=colours[1], pch=16, ylab="Abundance", xlab="Depth", ylim=c(0, max)) #initialize plot with one species
+    abline(lm(temp[,1]~temp.env$Depth), col=colours[1])
+    mtext(side=3, paste(letters[(i+j-1)], ProtectionList[i], "in", RegionList[j], sep=" ")) #title for each plot, the letters, followed by region and protection level separated by a space"
+
+    #use for loop for remaining species
+    for (k in 2:ncol(temp)) {
+      points(temp[,k]~temp.env$Depth, col=colours[k], pch=16, ylab="Abundance", xlab="Depth") #initialize plot with one species
+      abline(lm(temp[,k]~temp.env$Depth), col=colours[k],)
+    } 
+
+  }
+  
+}
+
+
+```
+
